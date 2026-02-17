@@ -1,0 +1,9 @@
+fastapi
+uvicorn 
+requests
+motor
+pydantic
+python-dotenv
+typing
+google-generativeai
+jsonschema

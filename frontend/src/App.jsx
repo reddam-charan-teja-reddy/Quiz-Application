@@ -7,6 +7,7 @@ import {
 import { AuthProvider } from './contexts/AuthContext';
 import { QuizProvider } from './contexts/QuizContext';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Home from './pages/Home';
 import QuizDetail from './pages/QuizDetail';
 import QuizQuestion from './pages/QuizQuestion';
@@ -25,6 +26,7 @@ function App() {
         <QuizProvider>
           <Routes>
             <Route path='/login' element={<Login />} />
+            <Route path='/register' element={<Register />} />
             <Route path='/' element={<Navigate to='/login' replace />} />
             <Route
               path='/home'

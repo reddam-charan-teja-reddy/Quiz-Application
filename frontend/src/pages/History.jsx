@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useQuiz } from '../contexts/QuizContext';
+import { apiFetch } from '../lib/api';
 import Sidebar from '../components/Sidebar';
 import QuizCard from '../components/QuizCard';
 import './History.css';
@@ -23,16 +24,7 @@ const History = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/history', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: user.username,
-          token: user.token,
-        }),
-      });
+      const response = await apiFetch('/api/history');
 
       if (!response.ok) {
         throw new Error('Failed to fetch history');

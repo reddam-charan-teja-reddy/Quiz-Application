@@ -3,22 +3,32 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Login.css';
 
-const Login = () => {
+const Register = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!username.trim()) {
       setError('Please enter a username');
       return;
     }
-    if (!password) {
-      setError('Please enter a password');
+    if (username.trim().length < 3) {
+      setError('Username must be at least 3 characters');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
 
@@ -26,7 +36,7 @@ const Login = () => {
     setError('');
 
     try {
-      await login(username.trim(), password);
+      await register(username.trim(), password);
       navigate('/home');
     } catch (err) {
       setError(err.message);
@@ -41,8 +51,7 @@ const Login = () => {
         <div className='login-header'>
           <h1>QuizApp</h1>
           <p className='app-description'>
-            Welcome to QuizApp! Test your knowledge, create quizzes, and
-            challenge yourself with interactive learning experiences.
+            Create an account to start creating and taking quizzes!
           </p>
         </div>
 
@@ -54,7 +63,7 @@ const Login = () => {
               type='text'
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder='Enter your username'
+              placeholder='Choose a username (min 3 characters)'
               disabled={loading}
             />
           </div>
@@ -66,7 +75,19 @@ const Login = () => {
               type='password'
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder='Enter your password'
+              placeholder='Choose a password (min 6 characters)'
+              disabled={loading}
+            />
+          </div>
+
+          <div className='form-group'>
+            <label htmlFor='confirmPassword'>Confirm Password</label>
+            <input
+              id='confirmPassword'
+              type='password'
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder='Confirm your password'
               disabled={loading}
             />
           </div>
@@ -74,31 +95,21 @@ const Login = () => {
           {error && <div className='error-message'>{error}</div>}
 
           <button type='submit' className='login-btn' disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Creating Account...' : 'Register'}
           </button>
         </form>
 
         <div className='login-footer'>
           <p>
-            Don't have an account?{' '}
-            <Link to='/register' className='register-link'>
-              Register here
+            Already have an account?{' '}
+            <Link to='/login' className='register-link'>
+              Login here
             </Link>
           </p>
-        </div>
-
-        <div className='login-features'>
-          <h3>Features</h3>
-          <ul>
-            <li>📝 Create custom quizzes</li>
-            <li>🤖 AI-powered quiz generation</li>
-            <li>📊 Track your progress</li>
-            <li>🎯 Challenge yourself with various topics</li>
-          </ul>
         </div>
       </div>
     </div>
   );
 };
 
-export default Login;
+export default Register;

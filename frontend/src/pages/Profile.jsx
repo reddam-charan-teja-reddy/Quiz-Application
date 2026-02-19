@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { apiFetch } from '../lib/api';
 import Sidebar from '../components/Sidebar';
 import './Profile.css';
 
@@ -34,16 +35,7 @@ const Profile = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: user.username,
-          token: user.token,
-        }),
-      });
+      const response = await apiFetch('/api/profile');
 
       if (!response.ok) {
         throw new Error('Failed to fetch profile');

@@ -29,3 +29,9 @@ dist-ssr
 venv
 pycache
 __pycache__
+
+# plans
+
+docs
+colorpallete.css
+postman_responses.json

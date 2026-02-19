@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { apiFetch } from '../lib/api';
 import Sidebar from '../components/Sidebar';
 import './EditQuiz.css';
 
@@ -30,23 +31,9 @@ const EditQuiz = () => {
       setLoading(true);
       setError('');
 
-      console.log('Fetching quiz data:', {
-        username: user.username,
-        token: user.token,
-        quiz_id: id,
-      });
+      console.log('Fetching quiz data for id:', id);
 
-      const response = await fetch('http://localhost:8000/api/getquiz', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: user.username,
-          token: user.token,
-          quiz_id: id,
-        }),
-      });
+      const response = await apiFetch(`/api/quizzes/${id}`);
 
       console.log('Response status:', response.status);
 
@@ -164,15 +151,9 @@ const EditQuiz = () => {
         }
       }
 
-      const response = await fetch('http://localhost:8000/api/editquiz', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await apiFetch(`/api/quizzes/${id}`, {
+        method: 'PUT',
         body: JSON.stringify({
-          username: user.username,
-          token: user.token,
-          quiz_id: id,
           quiz: {
             ...quiz,
             author: user.username,

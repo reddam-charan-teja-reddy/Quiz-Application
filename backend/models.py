@@ -2,31 +2,34 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 
+# ── Auth ─────────────────────────────────────────────
+
+class RegisterRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=30)
+    password: str = Field(..., min_length=6)
+
+
 class LoginRequest(BaseModel):
-    """User login request for /api/login"""
+    username: str
+    password: str
+
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
     username: str
 
-class LoginResponse(BaseModel):
-    """User login response for /api/login"""
-    token: str
-    status: str
 
-class Profile(BaseModel):
-    """User profile for /api/getquizzes"""
-    username: str
-    token: str
+# ── Quiz ─────────────────────────────────────────────
 
 class Question(BaseModel):
-    """Question model for Quiz"""
     id: str
     question: str
     options: list[str]
     answer: str
 
+
 class Quiz(BaseModel):
-    """Quiz model for /api/getquizzes"""
-    # id will be empty when user creates the quiz and sends to backend
-    # backend will generate a unique id for the quiz
     id: Optional[str] = None
     title: str
     description: str
@@ -35,58 +38,50 @@ class Quiz(BaseModel):
     categories: List[str]
     questions: List[Question]
 
+
 class QuizzesList(BaseModel):
-    """List of quizzes for returning in /api/getquizzes"""
     quizzes: list[Quiz]
 
+
+# ── Generate ─────────────────────────────────────────
+
 class GenerateRequest(BaseModel):
-    """Request model for /api/generate"""
     prompt: str
 
+
 class GenerateResponse(BaseModel):
-    """Response model for /api/generate"""
     quiz: Quiz
 
+
+# ── History ──────────────────────────────────────────
+
 class UpdateHistoryRequest(BaseModel):
-    """Request model for /api/updateHistory"""
-    username: str
-    token: str
     quiz_id: str
     correct: List[Question]
     wrong: List[Question]
     total: int
     score: int
 
-class UploadQuizRequest(BaseModel):
-    """Encapsulates user profile and quiz data for uploading."""
-    profile: Profile
-    quiz: Quiz
+
+# ── Profile ──────────────────────────────────────────
 
 class CreatedQuizInfo(BaseModel):
-    """A summary of a quiz created by the user."""
     id: str
     title: str
 
+
 class UserProfileResponse(BaseModel):
-    """The complete response payload for the user's profile page."""
     username: str
-    history: list # The history objects are already well-structured
+    history: list
     created_quizzes: List[CreatedQuizInfo]
 
+
+# ── Edit Quiz ────────────────────────────────────────
+
 class EditQuizRequest(BaseModel):
-    """Request model for /api/editquiz"""
-    username: str
-    token: str
-    quiz_id: str
     quiz: Quiz
 
+
 class EditQuizResponse(BaseModel):
-    """Response model for /api/editquiz"""
     message: str
     success: bool
-
-class GetQuizRequest(BaseModel):
-    """Request model for /api/getquiz"""
-    username: str
-    token: str
-    quiz_id: str

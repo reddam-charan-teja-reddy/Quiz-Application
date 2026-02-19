@@ -40,8 +40,8 @@ A full-stack quiz application built with React frontend and FastAPI backend, fea
 
 ### Prerequisites
 
-- Node.js (v18 or higher recommended)
-- Python 3.8+
+- bun 1.3.6 or later
+- Python 3.12+
 - MongoDB database
 - Google Gemini API key
 
@@ -56,8 +56,8 @@ A full-stack quiz application built with React frontend and FastAPI backend, fea
 2. Create a virtual environment:
 
    ```bash
-   python -m venv backend
-   source backend/bin/activate  # On Windows: backend\\Scripts\\activate
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\\Scripts\\activate
    ```
 
 3. Install dependencies:
@@ -92,12 +92,12 @@ The backend will be available at `http://localhost:8000`
 2. Install dependencies:
 
    ```bash
-   npm install
+   bun install
    ```
 
 3. Start the development server:
    ```bash
-   npm run dev
+   bun run dev
    ```
 
 The frontend will be available at `http://localhost:5173`
@@ -107,38 +107,31 @@ The frontend will be available at `http://localhost:5173`
 ### Frontend Pages
 
 1. **Login** (`/login`)
-
    - Username input and authentication
    - App description and features
 
 2. **Home** (`/home`)
-
    - Browse available quizzes
    - Search and filter functionality
    - Sidebar navigation
 
 3. **Quiz Detail** (`/quiz/:id`)
-
    - View quiz information and sample questions
    - Start quiz option
 
 4. **Quiz Question** (`/quiz/:id/:q_id`)
-
    - Answer questions with real-time feedback
    - Progress tracking
 
 5. **Quiz Results** (`/quiz/:id/leaderboard`)
-
    - View results and correct answers
    - Retake option
 
 6. **Create Quiz** (`/plus`)
-
    - Manual quiz creation
    - AI-powered quiz generation
 
 7. **History** (`/history`)
-
    - View past quiz attempts
    - Performance statistics
 

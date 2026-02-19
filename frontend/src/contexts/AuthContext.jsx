@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { setAccessToken, setOnAuthFailure, API_URL } from '../lib/api';
 
 const AuthContext = createContext();
 
@@ -14,52 +15,92 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check if user is logged in from localStorage
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
+  const clearAuth = useCallback(() => {
+    setUser(null);
+    setAccessToken(null);
   }, []);
 
-  const login = async (username) => {
-    try {
-      const response = await fetch('http://localhost:8000/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username }),
-      });
+  // Restore session on mount using refresh token cookie
+  useEffect(() => {
+    setOnAuthFailure(clearAuth);
 
-      if (!response.ok) {
-        throw new Error('Login failed');
+    const restoreSession = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAccessToken(data.access_token);
+          setUser({ username: data.username });
+        }
+      } catch {
+        // No valid session
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const data = await response.json();
-      const userData = {
-        username,
-        token: data.token,
-        status: data.status,
-      };
+    restoreSession();
+  }, [clearAuth]);
 
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
-      return userData;
-    } catch (error) {
-      throw new Error('Login failed: ' + error.message);
+  const login = async (username, password) => {
+    const res = await fetch(`${API_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Login failed' }));
+      throw new Error(err.detail || 'Login failed');
     }
+
+    const data = await res.json();
+    setAccessToken(data.access_token);
+    const userData = { username: data.username };
+    setUser(userData);
+    return userData;
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const register = async (username, password) => {
+    const res = await fetch(`${API_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Registration failed' }));
+      throw new Error(err.detail || 'Registration failed');
+    }
+
+    const data = await res.json();
+    setAccessToken(data.access_token);
+    const userData = { username: data.username };
+    setUser(userData);
+    return userData;
+  };
+
+  const logout = async () => {
+    try {
+      await fetch(`${API_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // Ignore errors during logout
+    }
+    clearAuth();
   };
 
   const value = {
     user,
     login,
+    register,
     logout,
     loading,
   };

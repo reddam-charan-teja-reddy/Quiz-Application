@@ -1,10 +1,12 @@
 import json
 
 from jsonschema import ValidationError
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from models import Quiz, GenerateRequest, GenerateResponse
 from gemini_client import model
+from limiter import limiter
+from utils.auth import get_current_user
 
 router = APIRouter(prefix="/api", tags=["generate"])
 
@@ -43,7 +45,8 @@ QUIZ_SCHEMA = {
 
 
 @router.post("/generate", response_model=GenerateResponse)
-async def generate_quiz(req: GenerateRequest):
+@limiter.limit("5/minute")
+async def generate_quiz(request: Request, req: GenerateRequest, user: dict = Depends(get_current_user)):
     """
     Generates a quiz using the Gemini API with a manually defined JSON schema
     to ensure compatibility with older Pydantic versions.

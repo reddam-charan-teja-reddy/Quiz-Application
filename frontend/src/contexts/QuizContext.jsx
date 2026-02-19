@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { apiFetch } from '../lib/api';
 
 const QuizContext = createContext();
 
@@ -23,17 +24,7 @@ export const QuizProvider = ({ children }) => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/getquizzes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: user.username,
-          token: user.token,
-        }),
-      });
-
+      const response = await apiFetch('/api/quizzes');
       if (!response.ok) {
         throw new Error('Failed to fetch quizzes');
       }
@@ -51,18 +42,9 @@ export const QuizProvider = ({ children }) => {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      const response = await fetch('http://localhost:8000/api/plus', {
+      const response = await apiFetch('/api/quizzes', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          profile: {
-            username: user.username,
-            token: user.token,
-          },
-          quiz: quizData,
-        }),
+        body: JSON.stringify(quizData),
       });
 
       if (!response.ok) {
@@ -70,7 +52,6 @@ export const QuizProvider = ({ children }) => {
       }
 
       const result = await response.json();
-      // Refresh quizzes after creating
       await fetchQuizzes();
       return result;
     } catch (error) {
@@ -80,11 +61,8 @@ export const QuizProvider = ({ children }) => {
 
   const generateQuiz = async (prompt) => {
     try {
-      const response = await fetch('http://localhost:8000/api/generate', {
+      const response = await apiFetch('/api/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ prompt }),
       });
 
@@ -138,14 +116,9 @@ export const QuizProvider = ({ children }) => {
     const score = Math.round((correct / total) * 100);
 
     try {
-      await fetch('http://localhost:8000/api/updateHistory', {
+      await apiFetch('/api/history', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
-          username: user.username,
-          token: user.token,
           quiz_id: currentQuizAttempt.quiz_id,
           correct: currentQuizAttempt.correct,
           wrong: currentQuizAttempt.wrong,

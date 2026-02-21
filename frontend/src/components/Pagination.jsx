@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import './Pagination.css';
 
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
@@ -21,11 +22,12 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   }
 
   return (
-    <div className="pagination">
+    <nav className="pagination" aria-label='Pagination'>
       <button
         className="pagination-btn"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage <= 1}
+        aria-label='Go to previous page'
       >
         ‹ Prev
       </button>
@@ -38,6 +40,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
             key={page}
             className={`pagination-btn ${page === currentPage ? 'active' : ''}`}
             onClick={() => onPageChange(page)}
+            aria-label={`Go to page ${page}`}
+            aria-current={page === currentPage ? 'page' : undefined}
           >
             {page}
           </button>
@@ -48,11 +52,12 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         className="pagination-btn"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage >= totalPages}
+        aria-label='Go to next page'
       >
         Next ›
       </button>
-    </div>
+    </nav>
   );
 };
 
-export default Pagination;
+export default memo(Pagination);

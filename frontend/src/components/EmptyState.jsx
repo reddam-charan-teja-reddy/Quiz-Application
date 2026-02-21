@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import './EmptyState.css';
 
 const EmptyState = ({ icon = '📭', title, message, action, actionText }) => (
@@ -13,4 +14,4 @@ const EmptyState = ({ icon = '📭', title, message, action, actionText }) => (
   </div>
 );
 
-export default EmptyState;
+export default memo(EmptyState);

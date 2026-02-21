@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useDeferredValue } from 'react';
 import { useGetQuizzesQuery, useGetCategoriesQuery } from '../store/api/apiSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import {
@@ -29,6 +29,8 @@ const Home = () => {
     pageSize,
   } = useAppSelector((state) => state.quiz);
 
+  useEffect(() => { document.title = 'Home — QuizApp'; }, []);
+
   // Local search input with debounce
   const [localSearch, setLocalSearch] = useState(searchTerm);
 
@@ -49,7 +51,10 @@ const Home = () => {
   queryParams.page = currentPage;
   queryParams.page_size = pageSize;
 
-  const { data, isLoading } = useGetQuizzesQuery(queryParams, {
+  // Defer query params so the UI stays responsive during rapid filter changes
+  const deferredQueryParams = useDeferredValue(queryParams);
+
+  const { data, isLoading } = useGetQuizzesQuery(deferredQueryParams, {
     skip: !user,
   });
 

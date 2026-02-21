@@ -13,6 +13,8 @@ const Profile = () => {
   const { data: profileData, isLoading, error: fetchError, refetch } = useGetProfileQuery();
   const [successMessage, setSuccessMessage] = useState('');
 
+  useEffect(() => { document.title = 'Profile — QuizApp'; }, []);
+
   useEffect(() => {
     if (location.state?.message) {
       setSuccessMessage(location.state.message);

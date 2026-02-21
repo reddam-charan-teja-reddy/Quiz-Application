@@ -38,9 +38,9 @@ const QuizTimer = ({ totalSeconds, onTimeUp, paused = false }) => {
   const isCritical = remaining <= 10;
 
   return (
-    <div className={`quiz-timer ${isLow ? 'low' : ''} ${isCritical ? 'critical' : ''}`}>
+    <div className={`quiz-timer ${isLow ? 'low' : ''} ${isCritical ? 'critical' : ''}`} aria-live='polite' aria-label={`Time remaining: ${minutes} minutes and ${seconds} seconds`}>
       <div className="timer-display">
-        <span className="timer-icon">⏱️</span>
+        <span className="timer-icon" aria-hidden='true'>⏱️</span>
         <span className="timer-text">
           {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
         </span>

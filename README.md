@@ -1,198 +1,244 @@
 # Quiz Application
 
-A full-stack quiz application built with React frontend and FastAPI backend, featuring user authentication, quiz creation, AI-powered quiz generation, and progress tracking.
+A full-stack quiz application built with **React 19** + **Redux Toolkit** and **FastAPI** + **MongoDB**, featuring user authentication, quiz creation, AI-powered quiz generation, server-side scoring, leaderboards, and detailed analytics.
 
 ## Features
 
-### 🎯 Core Features
+### Core Features
 
-- **User Authentication**: Simple username-based login system
-- **Quiz Taking**: Interactive quiz interface with real-time feedback
-- **Quiz Creation**: Manual quiz creation with customizable questions and options
-- **AI Generation**: Generate quizzes using AI based on topic descriptions
-- **Progress Tracking**: Track quiz attempts, scores, and performance over time
-- **User Profile**: View created quizzes and quiz history
+- **User Authentication** — JWT-based registration/login with refresh tokens (HTTP-only cookies)
+- **Quiz Taking** — Interactive quiz interface with randomized questions and timed sessions
+- **Quiz Creation** — Manual quiz creation with customizable questions, categories, difficulty levels
+- **AI Generation** — Generate quizzes using Google Gemini AI based on a topic description
+- **Server-Side Scoring** — Tamper-proof scoring with full answer detail stored per attempt
+- **Leaderboards** — Per-quiz and global leaderboards with best-attempt-per-user ranking
+- **Progress Tracking** — Track quiz attempts, scores, and performance over time
+- **User Profile** — View/edit profile, display name, email, created quizzes, analytics
+- **Quiz Management** — Duplicate, export, import, publish/draft, soft-delete quizzes
 
-### 🎨 User Interface
+### User Interface
 
-- **Responsive Design**: Works on desktop and mobile devices
-- **Modern UI**: Clean, intuitive interface with smooth animations
-- **Real-time Feedback**: Instant validation during quiz attempts
-- **Progress Indicators**: Visual progress bars and score displays
+- **Responsive Design** — Mobile and desktop optimized
+- **Code-Split Pages** — React.lazy + Suspense for fast initial load (~246 KB main chunk)
+- **Keyboard Accessible** — Skip-to-content, keyboard navigation for quiz answers (1-4), ARIA labels throughout
+- **Real-time Feedback** — Toast notifications, loading spinners, error boundaries
 
 ## Tech Stack
 
-### Frontend
-
-- **React**: User interface framework
-- **React Router**: Client-side routing
-- **CSS3**: Custom styling with modern design patterns
-- **Fetch API**: HTTP client for API communication
-
-### Backend
-
-- **FastAPI**: Python web framework
-- **MongoDB**: NoSQL database for data storage
-- **Google Gemini AI**: AI-powered quiz generation
-- **Pydantic**: Data validation and serialization
+| Layer              | Technology                                   |
+| ------------------ | -------------------------------------------- |
+| Frontend           | React 19.1, React Router DOM 7.9, Vite 7.1   |
+| State Management   | Redux Toolkit 2.11, RTK Query, redux-persist |
+| Charts             | Recharts 3.7                                 |
+| Backend            | FastAPI 0.117, Python 3.12, Pydantic 2.x     |
+| Database           | MongoDB (pymongo 4.10 AsyncMongoClient)      |
+| Authentication     | JWT (python-jose), bcrypt (passlib)          |
+| AI                 | Google Gemini (google-genai 1.64+)           |
+| Rate Limiting      | slowapi                                      |
+| Testing (Backend)  | pytest, pytest-asyncio, httpx                |
+| Testing (Frontend) | Vitest, @testing-library/react, Playwright   |
+| Linting            | ruff (backend), ESLint + jsx-a11y (frontend) |
+| Package Manager    | uv (backend), Bun 1.3.6+ (frontend)          |
 
 ## Getting Started
 
 ### Prerequisites
 
-- bun 1.3.6 or later
-- Python 3.12+
-- MongoDB database
-- Google Gemini API key
+- **uv** (backend dependency management) — [install](https://docs.astral.sh/uv/getting-started/installation/)
+- **Bun** 1.3.6 or later (frontend)
+- **Python** 3.12+ (backend)
+- **MongoDB** running locally or remote URI
+- **Google Gemini API key** (optional — for AI quiz generation)
 
 ### Backend Setup
 
-1. Navigate to the backend directory:
+```bash
+cd backend
 
-   ```bash
-   cd backend
-   ```
+# Install all dependencies (creates .venv automatically)
+uv sync --group dev
 
-2. Create a virtual environment:
+# Create .env file (see Environment Variables section)
+```
 
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\\Scripts\\activate
-   ```
+Create a `.env` file in the `backend/` directory:
 
-3. Install dependencies:
+```env
+MONGO_URI=mongodb://localhost:27017
+DB=quiz
+JWT_SECRET=your-strong-secret-here
+GEMINI_API_KEY=your_gemini_api_key_here
+CORS_ORIGINS=["http://localhost:5173"]
+```
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+Start the server:
 
-4. Create a `.env` file with your configuration:
+```bash
+uv run uvicorn app.main:app --reload
+```
 
-   ```env
-   MONGODB_URL=mongodb://localhost:27017
-   DATABASE_NAME=quizapp
-   GEMINI_API_KEY=your_gemini_api_key_here
-   ```
-
-5. Start the backend server:
-   ```bash
-   uvicorn main:app --reload
-   ```
-
-The backend will be available at `http://localhost:8000`
+The API will be available at `http://localhost:8000` with interactive docs at `/docs`.
 
 ### Frontend Setup
 
-1. Navigate to the frontend directory:
+```bash
+cd frontend
 
-   ```bash
-   cd frontend
-   ```
+# Install dependencies
+bun install
 
-2. Install dependencies:
+# Start development server
+bun run dev
+```
 
-   ```bash
-   bun install
-   ```
+The app will be available at `http://localhost:5173`.
 
-3. Start the development server:
-   ```bash
-   bun run dev
-   ```
+### Running Tests
 
-The frontend will be available at `http://localhost:5173`
+```bash
+# Backend tests
+cd backend
+uv run pytest
 
-## Application Structure
+# Frontend unit/component tests
+cd frontend
+bun run test
 
-### Frontend Pages
+# Frontend tests with coverage
+bun run test:coverage
 
-1. **Login** (`/login`)
-   - Username input and authentication
-   - App description and features
+# E2E tests (Playwright starts backend + frontend automatically)
+bunx playwright install
+bunx playwright test
+```
 
-2. **Home** (`/home`)
-   - Browse available quizzes
-   - Search and filter functionality
-   - Sidebar navigation
+Playwright uses `frontend/playwright.config.js` to start:
 
-3. **Quiz Detail** (`/quiz/:id`)
-   - View quiz information and sample questions
-   - Start quiz option
+- Backend: `uv run uvicorn app.main:app --host 127.0.0.1 --port 8000`
+- Frontend: `bun run dev`
 
-4. **Quiz Question** (`/quiz/:id/:q_id`)
-   - Answer questions with real-time feedback
-   - Progress tracking
+You can still reuse already-running local servers in non-CI mode.
 
-5. **Quiz Results** (`/quiz/:id/leaderboard`)
-   - View results and correct answers
-   - Retake option
+## Project Structure
 
-6. **Create Quiz** (`/plus`)
-   - Manual quiz creation
-   - AI-powered quiz generation
+```
+Quiz-App/
+├── backend/
+│   ├── pyproject.toml        # Project config, dependencies, ruff, pytest
+│   ├── uv.lock               # Locked dependency versions (managed by uv)
+│   ├── app/                   # Application source package
+│   │   ├── __init__.py
+│   │   ├── main.py            # FastAPI entry point
+│   │   ├── config.py          # pydantic-settings configuration
+│   │   ├── db.py              # MongoDB connection + index management
+│   │   ├── models.py          # All Pydantic request/response models
+│   │   ├── gemini_client.py   # Google Gemini AI client wrapper
+│   │   ├── limiter.py         # slowapi rate limiter instance
+│   │   ├── routes/
+│   │   │   ├── auth.py        # Register, login, refresh, logout, change password
+│   │   │   ├── quiz.py        # CRUD, search, duplicate, export/import, categories
+│   │   │   ├── attempts.py    # Start/finish attempts, history, leaderboards
+│   │   │   ├── profile.py     # Profile, stats, edit, delete account, public profile
+│   │   │   └── generate.py    # AI quiz generation
+│   │   └── utils/
+│   │       └── auth.py        # Password hashing, JWT creation/validation
+│   ├── migrations/            # Database migration scripts
+│   └── tests/
+│       ├── conftest.py        # Async test client + fixtures
+│       ├── factories.py       # Test data builders
+│       ├── unit/              # Model + utility tests
+│       └── integration/       # Full endpoint tests
+│
+├── frontend/
+│   ├── index.html
+│   ├── vite.config.js         # Vite config with code-splitting
+│   ├── vitest.config.js       # Unit test configuration
+│   ├── playwright.config.js   # E2E test configuration
+│   ├── package.json
+│   └── src/
+│       ├── App.jsx            # Router + lazy-loaded routes
+│       ├── lib/
+│       │   ├── api.js         # Fetch wrapper, token management
+│       │   └── sanitize.js    # Input sanitization utilities
+│       ├── store/
+│       │   ├── index.js       # Redux store (5 slices + RTK Query + persist)
+│       │   ├── hooks.js       # Typed useAppDispatch/useAppSelector
+│       │   ├── api/
+│       │   │   └── apiSlice.js # RTK Query — 24 auto-cached endpoints
+│       │   └── slices/        # auth, quiz, attempt, history, ui
+│       ├── components/        # Shared UI: Sidebar, QuizCard, Toast, etc.
+│       ├── pages/             # 16 route pages (code-split)
+│       └── __tests__/         # Unit, store, component, page tests
+│
+├── docs/                      # Architecture docs, audits, roadmap
+└── .github/workflows/         # CI pipelines (backend, frontend, e2e)
+```
 
-7. **History** (`/history`)
-   - View past quiz attempts
-   - Performance statistics
+## API Overview
 
-8. **Profile** (`/profile`)
-   - User statistics
-   - Created quizzes
-   - Recent activity
+All API endpoints are prefixed with `/api/v1`. Authentication uses Bearer JWT tokens.
 
-### API Endpoints
+| Method | Endpoint                   | Description                                   |
+| ------ | -------------------------- | --------------------------------------------- |
+| POST   | `/auth/register`           | Create account (rate-limited: 5/min)          |
+| POST   | `/auth/login`              | Login (rate-limited: 10/min)                  |
+| POST   | `/auth/refresh`            | Refresh access token via cookie               |
+| POST   | `/auth/logout`             | Clear refresh token cookie                    |
+| PUT    | `/auth/password`           | Change password                               |
+| GET    | `/quizzes`                 | List quizzes (search, filter, sort, paginate) |
+| GET    | `/quizzes/my`              | List user's own quizzes                       |
+| POST   | `/quizzes`                 | Create quiz                                   |
+| GET    | `/quizzes/:id`             | Get quiz detail                               |
+| PUT    | `/quizzes/:id`             | Update quiz (owner only)                      |
+| DELETE | `/quizzes/:id`             | Soft-delete quiz (owner only)                 |
+| POST   | `/quizzes/:id/duplicate`   | Duplicate quiz                                |
+| GET    | `/quizzes/:id/export`      | Export quiz as JSON                           |
+| POST   | `/quizzes/import`          | Import quiz from JSON                         |
+| GET    | `/categories`              | List categories with counts                   |
+| POST   | `/generate`                | AI quiz generation (rate-limited: 5/min)      |
+| POST   | `/attempts/start/:quizId`  | Start quiz attempt                            |
+| POST   | `/attempts/:id/finish`     | Submit answers + get score                    |
+| GET    | `/attempts`                | List user's attempt history                   |
+| GET    | `/attempts/:id`            | Get attempt detail                            |
+| DELETE | `/attempts/:id`            | Delete attempt                                |
+| GET    | `/quizzes/:id/leaderboard` | Quiz leaderboard                              |
+| GET    | `/leaderboard`             | Global leaderboard                            |
+| GET    | `/profile`                 | User profile                                  |
+| PUT    | `/profile`                 | Edit profile                                  |
+| DELETE | `/profile`                 | Delete account                                |
+| GET    | `/stats`                   | User analytics/stats                          |
+| GET    | `/user/:username`          | Public profile                                |
+| GET    | `/health`                  | Health check                                  |
 
-- `POST /api/login` - User authentication
-- `GET /api/getquizzes` - Fetch all quizzes
-- `POST /api/plus` - Create new quiz
-- `POST /api/generate` - Generate quiz using AI
-- `POST /api/updateHistory` - Update user's quiz history
-- `POST /api/history` - Get user's quiz history
-- `GET /api/profile` - Get user profile data
+See [docs/API_REFERENCE.md](docs/API_REFERENCE.md) for full request/response schemas.
 
-## State Management
+## Environment Variables
 
-The application uses React Context for state management:
+### Backend (`backend/.env`)
 
-- **AuthContext**: Manages user authentication and login state
-- **QuizContext**: Handles quiz data, quiz attempts, and quiz creation
+| Variable                      | Default                       | Description                   |
+| ----------------------------- | ----------------------------- | ----------------------------- |
+| `MONGO_URI`                   | `mongodb://localhost:27017`   | MongoDB connection string     |
+| `DB`                          | `quiz`                        | Database name                 |
+| `JWT_SECRET`                  | `change-me-in-production-...` | Secret key for JWT signing    |
+| `JWT_ALGORITHM`               | `HS256`                       | JWT algorithm                 |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `15`                          | Access token TTL              |
+| `REFRESH_TOKEN_EXPIRE_DAYS`   | `7`                           | Refresh token TTL             |
+| `GEMINI_API_KEY`              | _(empty)_                     | Google Gemini API key         |
+| `CORS_ORIGINS`                | `["http://localhost:5173"]`   | Allowed CORS origins          |
+| `MAX_REQUEST_BODY_BYTES`      | `2097152` (2 MB)              | Request body size limit       |
+| `ENVIRONMENT`                 | `development`                 | `development` or `production` |
 
-## Usage Instructions
+### Frontend (`frontend/.env`)
 
-### Taking a Quiz
-
-1. Log in with your username
-2. Browse available quizzes on the home page
-3. Click on a quiz card to view details
-4. Click "Start Quiz" to begin
-5. Answer questions and receive immediate feedback
-6. View your results and performance summary
-
-### Creating a Quiz
-
-1. Click the "Create Quiz" button in the sidebar
-2. Choose between manual creation or AI generation
-3. For AI generation: Enter a topic description
-4. For manual creation: Fill in quiz details, questions, and options
-5. Submit to create the quiz
-
-### Viewing Progress
-
-1. Visit the "History" page to see past quiz attempts
-2. Check the "Profile" page for comprehensive statistics
-3. Track your improvement over time
+| Variable       | Default                 | Description          |
+| -------------- | ----------------------- | -------------------- |
+| `VITE_API_URL` | `http://localhost:8000` | Backend API base URL |
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Open a Pull Request
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, and PR guidelines.
 
 ## License
 
 This project is licensed under the MIT License.
-
-## Support
-
-For support or questions, please open an issue on GitHub.

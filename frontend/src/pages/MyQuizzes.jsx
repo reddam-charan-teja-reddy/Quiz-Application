@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   useGetMyQuizzesQuery,
@@ -26,6 +26,8 @@ const MyQuizzes = () => {
 
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [toast, setToast] = useState(null);
+
+  useEffect(() => { document.title = 'My Quizzes — QuizApp'; }, []);
 
   const quizzes = data?.quizzes ?? [];
 

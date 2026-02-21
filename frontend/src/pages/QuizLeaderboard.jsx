@@ -26,6 +26,8 @@ const QuizLeaderboard = () => {
   const [loading, setLoading] = useState(true);
   const hasSubmitted = useRef(false);
 
+  useEffect(() => { document.title = 'Leaderboard — QuizApp'; }, []);
+
   useEffect(() => {
     // Guard against StrictMode double-invocation (#14)
     if (hasSubmitted.current) return;
@@ -41,6 +43,7 @@ const QuizLeaderboard = () => {
       try {
         const res = await finishAttemptApi({ attemptId, answers }).unwrap();
         setResults({
+          quiz: currentQuiz,
           correct,
           wrong,
           total: currentQuiz.questions.length,
@@ -54,6 +57,7 @@ const QuizLeaderboard = () => {
         const score = Math.round((correct.length / total) * 100);
 
         setResults({
+          quiz: currentQuiz,
           correct,
           wrong,
           total,
@@ -70,10 +74,15 @@ const QuizLeaderboard = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRetakeQuiz = async () => {
+    if (!results?.quiz) {
+      navigate(`/quiz/${id}`);
+      return;
+    }
+
     try {
-      const res = await startAttemptApi(currentQuiz.id).unwrap();
+      const res = await startAttemptApi(results.quiz.id).unwrap();
       // Use shuffled questions from the server for the new attempt
-      const quizWithShuffled = { ...currentQuiz, questions: res.questions };
+      const quizWithShuffled = { ...results.quiz, questions: res.questions };
       dispatch(startAttempt({ quiz: quizWithShuffled, attemptId: res.attempt_id }));
       navigate(`/quiz/${id}/0`);
     } catch {
@@ -96,7 +105,7 @@ const QuizLeaderboard = () => {
     );
   }
 
-  if (!results || !currentQuiz) {
+  if (!results) {
     return (
       <div className='quiz-leaderboard-container'>
         <Sidebar />
@@ -127,7 +136,7 @@ const QuizLeaderboard = () => {
     return 'F';
   };
 
-  const shareText = `I scored ${results.score}% on "${currentQuiz.title}"! Can you beat my score?`;
+  const shareText = `I scored ${results.score}% on "${results.quiz.title}"! Can you beat my score?`;
 
   return (
     <div className='quiz-leaderboard-container'>
@@ -138,7 +147,7 @@ const QuizLeaderboard = () => {
           <div className='results-header'>
             <div className='quiz-completed-icon'>🎉</div>
             <h1>Quiz Completed!</h1>
-            <h2>{currentQuiz.title}</h2>
+            <h2>{results.quiz.title}</h2>
           </div>
 
           <div className='score-summary'>

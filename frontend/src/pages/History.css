@@ -202,6 +202,19 @@
   flex-shrink: 0;
 }
 
+.history-review-btn {
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #10b981;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.history-review-btn:hover { background: #d1fae5; }
+
 .history-view-btn {
   padding: 0.3rem 0.6rem;
   border-radius: 6px;

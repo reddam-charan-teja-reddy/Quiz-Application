@@ -37,7 +37,7 @@ const ShareButton = ({ title, url }) => {
   };
 
   return (
-    <button className="share-btn" onClick={handleShare} title="Share quiz">
+    <button className="share-btn" onClick={handleShare} title="Share quiz" aria-label={copied ? 'Link copied' : 'Share quiz'}>
       {copied ? '✅ Copied!' : '🔗 Share'}
     </button>
   );

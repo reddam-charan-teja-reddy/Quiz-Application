@@ -28,6 +28,8 @@ const EditQuiz = () => {
     questions: [],
   });
 
+  useEffect(() => { document.title = 'Edit Quiz — QuizApp'; }, []);
+
   // Seed local form state when fetched quiz arrives
   useEffect(() => {
     if (fetchedQuiz) {
@@ -156,8 +158,11 @@ const EditQuiz = () => {
         description: quiz.description,
         categories: quiz.categories,
         is_published: quiz.is_published,
-        questions: quiz.questions.map(({ id: qId, ...q }) => ({
-          ...q,
+        questions: quiz.questions.map((q) => ({
+          id: q.id,
+          question: q.question,
+          options: q.options,
+          answer: q.answer,
           explanation: q.explanation || undefined,
         })),
       };
@@ -223,7 +228,7 @@ const EditQuiz = () => {
         </div>
 
         {error && (
-          <div className='error-banner'>
+          <div id='edit-quiz-error' className='error-banner' role='alert'>
             <span>⚠️ {error}</span>
             <button onClick={() => setError('')} className='close-error'>
               ✕
@@ -244,6 +249,8 @@ const EditQuiz = () => {
                 onChange={(e) => handleInputChange('title', e.target.value)}
                 placeholder='Enter quiz title...'
                 className='form-input'
+                aria-invalid={!!error}
+                aria-describedby={error ? 'edit-quiz-error' : undefined}
               />
             </div>
 
@@ -258,6 +265,8 @@ const EditQuiz = () => {
                 placeholder='Enter quiz description...'
                 className='form-textarea'
                 rows='3'
+                aria-invalid={!!error}
+                aria-describedby={error ? 'edit-quiz-error' : undefined}
               />
             </div>
 

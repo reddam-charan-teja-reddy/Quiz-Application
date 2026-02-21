@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useGetStatsQuery } from '../store/api/apiSlice';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -14,6 +15,8 @@ const COLORS = ['#ef4444', '#f59e0b', '#eab308', '#10b981', '#667eea'];
 const StatsPage = () => {
   const navigate = useNavigate();
   const { data: stats, isLoading, error } = useGetStatsQuery();
+
+  useEffect(() => { document.title = 'Statistics — QuizApp'; }, []);
 
   if (isLoading) {
     return (

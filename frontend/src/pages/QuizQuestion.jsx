@@ -14,6 +14,8 @@ const QuizQuestion = () => {
   const { currentQuiz, attemptId, answers, startTime } = useAppSelector((state) => state.attempt);
   const [finishAttemptApi] = useFinishAttemptMutation();
 
+  useEffect(() => { document.title = 'Quiz — QuizApp'; }, []);
+
   const [selectedAnswer, setSelectedAnswer] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -49,6 +51,22 @@ const QuizQuestion = () => {
     setShowFeedback(false);
     setIsCorrect(false);
   }, [questionIndex]);
+
+  // Keyboard navigation: press 1-4 to select answer options
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (showFeedback) return;
+      if (!currentQuiz) return;
+      const question = currentQuiz.questions[questionIndex];
+      if (!question) return;
+      const keyNum = parseInt(e.key);
+      if (keyNum >= 1 && keyNum <= 4 && keyNum <= question.options.length) {
+        setSelectedAnswer(question.options[keyNum - 1]);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showFeedback, currentQuiz, questionIndex]);
 
   const handleNextQuestion = useCallback(() => {
     const nextIndex = questionIndex + 1;

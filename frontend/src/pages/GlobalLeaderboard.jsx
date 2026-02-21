@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useGetGlobalLeaderboardQuery } from '../store/api/apiSlice';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
@@ -8,6 +9,8 @@ import './GlobalLeaderboard.css';
 const GlobalLeaderboard = () => {
   const navigate = useNavigate();
   const { data, isLoading, error } = useGetGlobalLeaderboardQuery();
+
+  useEffect(() => { document.title = 'Global Leaderboard — QuizApp'; }, []);
 
   const entries = data?.entries ?? [];
 

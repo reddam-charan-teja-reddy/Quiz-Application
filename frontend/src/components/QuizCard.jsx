@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './QuizCard.css';
 
@@ -15,7 +16,13 @@ const QuizCard = ({ quiz, showScore = false, score = null }) => {
   };
 
   return (
-    <div className='quiz-card' onClick={handleClick}>
+    <div
+      className='quiz-card'
+      onClick={handleClick}
+      role='button'
+      tabIndex={0}
+      aria-label={quiz.title}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}>
       <div className='quiz-card-header'>
         <h3 className='quiz-title'>{quiz.title}</h3>
         <div className='quiz-card-badges'>
@@ -58,4 +65,4 @@ const QuizCard = ({ quiz, showScore = false, score = null }) => {
   );
 };
 
-export default QuizCard;
+export default memo(QuizCard);

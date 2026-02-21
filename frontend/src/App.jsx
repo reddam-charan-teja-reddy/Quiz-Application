@@ -1,32 +1,49 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from 'react-router-dom';
 import { useAppDispatch } from './store/hooks';
 import { restoreSession, forceLogout } from './store/slices/authSlice';
 import { setOnAuthFailure } from './lib/api';
 import ErrorBoundary from './components/ErrorBoundary';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Home from './pages/Home';
-import QuizDetail from './pages/QuizDetail';
-import QuizQuestion from './pages/QuizQuestion';
-import QuizLeaderboard from './pages/QuizLeaderboard';
-import QuizRankings from './pages/QuizRankings';
-import History from './pages/History';
-import Profile from './pages/Profile';
-import CreateQuiz from './pages/CreateQuiz';
-import EditQuiz from './pages/EditQuiz';
-import MyQuizzes from './pages/MyQuizzes';
-import Settings from './pages/Settings';
-import GlobalLeaderboard from './pages/GlobalLeaderboard';
-import StatsPage from './pages/StatsPage';
-import NotFound from './pages/NotFound';
+import LoadingSpinner from './components/LoadingSpinner';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
+
+// Lazy-loaded pages — each gets its own chunk for code splitting
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Home = lazy(() => import('./pages/Home'));
+const QuizDetail = lazy(() => import('./pages/QuizDetail'));
+const QuizQuestion = lazy(() => import('./pages/QuizQuestion'));
+const QuizLeaderboard = lazy(() => import('./pages/QuizLeaderboard'));
+const QuizRankings = lazy(() => import('./pages/QuizRankings'));
+const History = lazy(() => import('./pages/History'));
+const AttemptDetail = lazy(() => import('./pages/AttemptDetail'));
+const Profile = lazy(() => import('./pages/Profile'));
+const CreateQuiz = lazy(() => import('./pages/CreateQuiz'));
+const EditQuiz = lazy(() => import('./pages/EditQuiz'));
+const MyQuizzes = lazy(() => import('./pages/MyQuizzes'));
+const Settings = lazy(() => import('./pages/Settings'));
+const GlobalLeaderboard = lazy(() => import('./pages/GlobalLeaderboard'));
+const StatsPage = lazy(() => import('./pages/StatsPage'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const About = lazy(() => import('./pages/About'));
+
+/** Scroll to top and manage focus on route changes for accessibility. */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const main = document.getElementById('main-content');
+    if (main) main.focus({ preventScroll: true });
+  }, [pathname]);
+  return null;
+}
 
 function App() {
   const dispatch = useAppDispatch();
@@ -40,6 +57,10 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
+        <ScrollToTop />
+        <a href="#main-content" className="skip-to-content">Skip to content</a>
+        <main id="main-content" tabIndex={-1}>
+        <Suspense fallback={<LoadingSpinner text="Loading page..." />}>
         <Routes>
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
@@ -89,6 +110,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <History />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/attempt/:attemptId'
+              element={
+                <ProtectedRoute>
+                  <AttemptDetail />
                 </ProtectedRoute>
               }
             />
@@ -148,8 +177,18 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path='/about'
+              element={
+                <ProtectedRoute>
+                  <About />
+                </ProtectedRoute>
+              }
+            />
             <Route path='*' element={<NotFound />} />
           </Routes>
+        </Suspense>
+        </main>
       </Router>
     </ErrorBoundary>
   );

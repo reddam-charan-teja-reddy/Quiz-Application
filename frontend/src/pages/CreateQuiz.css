@@ -139,6 +139,45 @@
   z-index: 1;
 }
 
+/* Import from JSON section */
+.import-section {
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border-radius: 12px;
+  border: 1px solid #bbf7d0;
+}
+
+.import-section h2 {
+  color: #166534;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.import-section p {
+  color: #15803d;
+  margin: 0 0 1rem 0;
+}
+
+.import-btn {
+  display: inline-block;
+  background: #22c55e;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.import-btn:hover {
+  background: #16a34a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(34, 197, 94, 0.3);
+}
+
 .quiz-form h2 {
   color: #1f2937;
   font-size: 1.5rem;

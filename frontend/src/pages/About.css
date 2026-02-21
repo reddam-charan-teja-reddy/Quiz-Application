@@ -1,0 +1,180 @@
+/* ── About / Help Page ────────────────────────────── */
+
+.about-container {
+  display: flex;
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+.about-content {
+  flex: 1;
+  margin-left: 250px;
+  padding: 2rem;
+  max-width: 850px;
+}
+
+/* ── Header ──────────────────────────────────────── */
+
+.about-header {
+  margin-bottom: 2.5rem;
+}
+
+.about-header h1 {
+  color: #1f2937;
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+}
+
+.about-tagline {
+  color: #6b7280;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* ── Sections ────────────────────────────────────── */
+
+.about-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.75rem 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.about-section h2 {
+  color: #1f2937;
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.about-section > p {
+  color: #374151;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ── Feature list ────────────────────────────────── */
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.feature-list li {
+  padding: 0.6rem 0;
+  color: #374151;
+  line-height: 1.6;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.feature-list li:last-child {
+  border-bottom: none;
+}
+
+/* ── FAQ ─────────────────────────────────────────── */
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.faq-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.faq-item summary {
+  padding: 0.85rem 1rem;
+  font-weight: 500;
+  color: #1f2937;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  list-style-type: none;
+}
+
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item summary::before {
+  content: '▸ ';
+  color: #667eea;
+  font-weight: 700;
+}
+
+.faq-item[open] summary::before {
+  content: '▾ ';
+}
+
+.faq-item summary:hover {
+  background: #f9fafb;
+}
+
+.faq-item p {
+  padding: 0 1rem 1rem;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Tech Grid ───────────────────────────────────── */
+
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.tech-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.tech-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.tech-value {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+/* ── Footer ──────────────────────────────────────── */
+
+.about-footer {
+  text-align: center;
+  padding: 2rem 0;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+/* ── Responsive ──────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .about-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+
+  .about-section {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .tech-grid {
+    grid-template-columns: 1fr;
+  }
+}

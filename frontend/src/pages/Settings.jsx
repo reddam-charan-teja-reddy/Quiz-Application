@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../store/hooks';
 import { logout } from '../store/slices/authSlice';
@@ -23,6 +23,8 @@ const Settings = () => {
   const [changePassword] = useChangePasswordMutation();
   const [deleteAccount, { isLoading: deleting }] = useDeleteAccountMutation();
   const [importQuiz] = useImportQuizMutation();
+
+  useEffect(() => { document.title = 'Settings — QuizApp'; }, []);
 
   const [toast, setToast] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

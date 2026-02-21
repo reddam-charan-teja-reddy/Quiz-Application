@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   useGetQuizQuery,
@@ -26,6 +26,8 @@ const QuizDetail = () => {
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [toast, setToast] = useState(null);
+
+  useEffect(() => { document.title = `${quiz?.title || 'Quiz'} — QuizApp`; }, [quiz]);
 
   const isAuthor = quiz && user && quiz.author === user.username;
 

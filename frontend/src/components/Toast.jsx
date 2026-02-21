@@ -21,10 +21,10 @@ const Toast = ({ message, type = 'info', duration = 4000, onClose }) => {
   const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
 
   return (
-    <div className={`toast toast-${type} ${visible ? 'toast-enter' : 'toast-exit'}`}>
-      <span className="toast-icon">{icons[type] || icons.info}</span>
+    <div className={`toast toast-${type} ${visible ? 'toast-enter' : 'toast-exit'}`} role='alert' aria-live='assertive'>
+      <span className="toast-icon" aria-hidden='true'>{icons[type] || icons.info}</span>
       <span className="toast-message">{message}</span>
-      <button className="toast-close" onClick={handleClose}>×</button>
+      <button className="toast-close" onClick={handleClose} aria-label='Close notification'>×</button>
     </div>
   );
 };

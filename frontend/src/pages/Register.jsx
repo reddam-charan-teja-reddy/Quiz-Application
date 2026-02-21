@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAppDispatch } from '../store/hooks';
 import { register, clearAuthError } from '../store/slices/authSlice';
@@ -13,6 +13,8 @@ const Register = () => {
   const [error, setError] = useState('');
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+
+  useEffect(() => { document.title = 'Register — QuizApp'; }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -68,6 +70,8 @@ const Register = () => {
               onChange={(e) => setUsername(sanitizeText(e.target.value, 50))}
               placeholder='Choose a username (min 3 characters)'
               disabled={loading}
+              aria-invalid={!!error}
+              aria-describedby={error ? 'register-error' : undefined}
             />
           </div>
 
@@ -80,6 +84,8 @@ const Register = () => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder='Choose a password (min 6 characters)'
               disabled={loading}
+              aria-invalid={!!error}
+              aria-describedby={error ? 'register-error' : undefined}
             />
           </div>
 
@@ -92,10 +98,12 @@ const Register = () => {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder='Confirm your password'
               disabled={loading}
+              aria-invalid={!!error}
+              aria-describedby={error ? 'register-error' : undefined}
             />
           </div>
 
-          {error && <div className='error-message'>{error}</div>}
+          {error && <div id='register-error' className='error-message' role='alert'>{error}</div>}
 
           <button type='submit' className='login-btn' disabled={loading}>
             {loading ? 'Creating Account...' : 'Register'}

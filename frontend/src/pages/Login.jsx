@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { login, clearAuthError } from '../store/slices/authSlice';
@@ -13,6 +13,8 @@ const Login = () => {
   const dispatch = useAppDispatch();
   const authError = useAppSelector((state) => state.auth.error);
   const navigate = useNavigate();
+
+  useEffect(() => { document.title = 'Login — QuizApp'; }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,6 +62,8 @@ const Login = () => {
               onChange={(e) => setUsername(sanitizeText(e.target.value, 50))}
               placeholder='Enter your username'
               disabled={loading}
+              aria-invalid={!!error}
+              aria-describedby={error ? 'login-error' : undefined}
             />
           </div>
 
@@ -72,10 +76,12 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder='Enter your password'
               disabled={loading}
+              aria-invalid={!!error}
+              aria-describedby={error ? 'login-error' : undefined}
             />
           </div>
 
-          {error && <div className='error-message'>{error}</div>}
+          {error && <div id='login-error' className='error-message' role='alert'>{error}</div>}
 
           <button type='submit' className='login-btn' disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}

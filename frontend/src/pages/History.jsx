@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { useGetHistoryQuery, useDeleteAttemptMutation } from '../store/api/apiSlice';
@@ -15,6 +15,8 @@ const History = () => {
 
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [toast, setToast] = useState(null);
+
+  useEffect(() => { document.title = 'History — QuizApp'; }, []);
 
   const getScoreColor = (score) => {
     if (score >= 80) return '#10b981';
@@ -90,6 +92,12 @@ const History = () => {
                   <div className='history-card'>
                     <h3>{attempt.quiz_title || 'Untitled Quiz'}</h3>
                     <div className='history-card-actions'>
+                      <button
+                          className='history-review-btn'
+                          onClick={() => navigate(`/attempt/${attempt.attempt_id}`)}
+                        >
+                          Review
+                        </button>
                       {attempt.quiz_id && (
                         <button
                           className='history-view-btn'

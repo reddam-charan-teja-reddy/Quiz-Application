@@ -23,18 +23,37 @@ dist-ssr
 *.sln
 *.sw?
 
-# backend
+# Backend
 .env
 .env.local
 venv
 pycache
 __pycache__
 migrations
-# plans
 
-docs
-colorpallete.css
+# Test artifacts & coverage
+htmlcov/
+.coverage
+coverage/
+*.lcov
+.pytest_cache/
+.ruff_cache/
+test-results/
+playwright-report/
+
+# Build artifacts
+*.egg-info/
+*.pyc
+
+# docs
+01_BACKEND_AUDIT.md
+02_FRONTEND_AUDIT.md
+03_DATABASE_AUDIT.md
+04_APP_DOCUMENTATION.md
+05_PROPOSED_CHANGES.md
+06_AUDIT_SUMMARY.md
+07_MISSING_FEATURES.md
+08_VERSION_ROADMAP.md
+09_SYSTEM_DESIGN.md
+10_MEDIA_DESIGN.md
 postman_responses.json
-
-# github workflow will be removed after v 0.5 release
-.github/workflows

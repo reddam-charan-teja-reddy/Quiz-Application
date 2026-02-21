@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGetQuizLeaderboardQuery } from '../store/api/apiSlice';
 import Sidebar from '../components/Sidebar';
@@ -9,6 +10,8 @@ const QuizRankings = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data, isLoading, error } = useGetQuizLeaderboardQuery(id);
+
+  useEffect(() => { document.title = 'Rankings — QuizApp'; }, []);
 
   const getMedal = (rank) => {
     if (rank === 1) return '🥇';

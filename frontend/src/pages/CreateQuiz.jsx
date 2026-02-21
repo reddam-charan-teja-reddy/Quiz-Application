@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCreateQuizMutation, useGenerateQuizMutation } from '../store/api/apiSlice';
+import { useCreateQuizMutation, useGenerateQuizMutation, useImportQuizMutation } from '../store/api/apiSlice';
 import { sanitizeText, sanitizeTextArea } from '../lib/sanitize';
 import Sidebar from '../components/Sidebar';
 import Toast from '../components/Toast';
@@ -10,11 +10,15 @@ const CreateQuiz = () => {
   const navigate = useNavigate();
   const [createQuiz] = useCreateQuizMutation();
   const [generateQuizApi] = useGenerateQuizMutation();
+  const [importQuizApi] = useImportQuizMutation();
+  const fileInputRef = useRef(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
+
+  useEffect(() => { document.title = 'Create Quiz — QuizApp'; }, []);
 
   const [quizData, setQuizData] = useState({
     title: '',
@@ -150,6 +154,60 @@ const CreateQuiz = () => {
     }
   };
 
+  const handleFileImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset so the same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    if (!file.name.endsWith('.json')) {
+      setError('Please select a JSON file');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('File is too large (max 2 MB)');
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      // Validate basic structure
+      if (!data.title || !Array.isArray(data.questions) || data.questions.length === 0) {
+        setError('Invalid quiz file — must contain "title" and "questions" array');
+        return;
+      }
+
+      // Populate form with imported data
+      setQuizData((prev) => ({
+        ...prev,
+        title: sanitizeText(data.title || '', 200),
+        description: sanitizeTextArea(data.description || ''),
+        categories: Array.isArray(data.categories) && data.categories.length > 0
+          ? data.categories.map((c) => sanitizeText(c, 100))
+          : [''],
+        difficulty: data.difficulty || prev.difficulty,
+        time_limit_minutes: data.time_limit_minutes || prev.time_limit_minutes,
+        time_per_question_seconds: data.time_per_question_seconds || prev.time_per_question_seconds,
+        questions: data.questions.map((q) => ({
+          id: crypto.randomUUID(),
+          question: q.question || '',
+          options: Array.isArray(q.options) ? q.options : ['', '', '', ''],
+          answer: q.answer || '',
+          explanation: q.explanation || '',
+        })),
+      }));
+
+      setError('');
+      setToast({ message: `Imported "${data.title}" with ${data.questions.length} questions. Review and save.`, type: 'success' });
+    } catch {
+      setError('Failed to parse JSON file. Please check the format.');
+    }
+  };
+
   const validateQuiz = () => {
     if (!quizData.title.trim()) return 'Title is required';
     if (quizData.title.trim().length > 200) return 'Title must be under 200 characters';
@@ -193,8 +251,11 @@ const CreateQuiz = () => {
         description: quizData.description,
         categories: quizData.categories.filter((cat) => cat.trim()),
         is_published: quizData.is_published,
-        questions: quizData.questions.map(({ id, ...q }) => ({
-          ...q,
+        questions: quizData.questions.map((q) => ({
+          id: q.id,
+          question: q.question,
+          options: q.options,
+          answer: q.answer,
           explanation: q.explanation || undefined,
         })),
       };
@@ -255,11 +316,34 @@ const CreateQuiz = () => {
             <span>OR</span>
           </div>
 
+          {/* Import from JSON */}
+          <div className='import-section'>
+            <h2>📁 Import from JSON</h2>
+            <p>Import a previously exported quiz JSON file.</p>
+            <input
+              ref={fileInputRef}
+              type='file'
+              accept='.json'
+              onChange={handleFileImport}
+              className='sr-only'
+              id='quiz-file-input'
+              aria-label='Import quiz JSON file'
+            />
+            <label htmlFor='quiz-file-input' className='import-btn' role='button' tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}>
+              📂 Choose File
+            </label>
+          </div>
+
+          <div className='divider'>
+            <span>OR</span>
+          </div>
+
           {/* Manual Creation Form */}
           <form onSubmit={handleSubmit} className='quiz-form'>
             <h2>📝 Create Manually</h2>
 
-            {error && <div className='error-message'>{error}</div>}
+            {error && <div id='create-quiz-error' className='error-message' role='alert'>{error}</div>}
 
             {/* Basic Info */}
             <div className='form-section'>
@@ -274,6 +358,8 @@ const CreateQuiz = () => {
                   onChange={(e) => handleInputChange('title', e.target.value)}
                   placeholder='Enter quiz title'
                   required
+                  aria-invalid={!!error}
+                  aria-describedby={error ? 'create-quiz-error' : undefined}
                 />
               </div>
 
@@ -288,6 +374,8 @@ const CreateQuiz = () => {
                   placeholder='Describe your quiz'
                   rows='3'
                   required
+                  aria-invalid={!!error}
+                  aria-describedby={error ? 'create-quiz-error' : undefined}
                 />
               </div>
 

@@ -4,6 +4,7 @@ import { useAppSelector } from '../store/hooks';
 import { useGetQuizQuery, useUpdateQuizMutation } from '../store/api/apiSlice';
 import { sanitizeText, sanitizeTextArea } from '../lib/sanitize';
 import Sidebar from '../components/Sidebar';
+import LoadingSpinner from '../components/LoadingSpinner';
 import './EditQuiz.css';
 
 const EditQuiz = () => {
@@ -20,13 +21,27 @@ const EditQuiz = () => {
     title: '',
     description: '',
     categories: [],
+    difficulty: '',
+    time_limit_minutes: '',
+    time_per_question_seconds: '',
+    is_published: true,
     questions: [],
   });
 
   // Seed local form state when fetched quiz arrives
   useEffect(() => {
     if (fetchedQuiz) {
-      setQuiz(fetchedQuiz);
+      setQuiz({
+        ...fetchedQuiz,
+        difficulty: fetchedQuiz.difficulty || '',
+        time_limit_minutes: fetchedQuiz.time_limit_minutes || '',
+        time_per_question_seconds: fetchedQuiz.time_per_question_seconds || '',
+        is_published: fetchedQuiz.is_published ?? true,
+        questions: (fetchedQuiz.questions || []).map((q) => ({
+          ...q,
+          explanation: q.explanation || '',
+        })),
+      });
       setCategoriesText((fetchedQuiz.categories || []).join(', '));
     }
   }, [fetchedQuiz]);
@@ -43,10 +58,16 @@ const EditQuiz = () => {
   }, [fetchError]);
 
   const handleInputChange = (field, value) => {
-    const sanitized = field === 'description'
-      ? sanitizeTextArea(value)
-      : sanitizeText(value, 200);
-    setQuiz((prev) => ({ ...prev, [field]: sanitized }));
+    if (field === 'description') {
+      setQuiz((prev) => ({ ...prev, [field]: sanitizeTextArea(value) }));
+    } else if (field === 'time_limit_minutes' || field === 'time_per_question_seconds') {
+      const num = value === '' ? '' : Math.max(0, parseInt(value) || 0);
+      setQuiz((prev) => ({ ...prev, [field]: num }));
+    } else if (field === 'is_published' || field === 'difficulty') {
+      setQuiz((prev) => ({ ...prev, [field]: value }));
+    } else {
+      setQuiz((prev) => ({ ...prev, [field]: sanitizeText(value, 200) }));
+    }
   };
 
   const handleCategoriesBlur = () => {
@@ -58,7 +79,7 @@ const EditQuiz = () => {
   };
 
   const handleQuestionChange = (questionIndex, field, value) => {
-    const sanitized = field === 'question'
+    const sanitized = field === 'question' || field === 'explanation'
       ? sanitizeTextArea(value, 1000)
       : sanitizeText(value);
     setQuiz((prev) => ({
@@ -92,6 +113,7 @@ const EditQuiz = () => {
       question: '',
       options: ['', '', '', ''],
       answer: '',
+      explanation: '',
     };
     setQuiz((prev) => ({
       ...prev,
@@ -113,7 +135,6 @@ const EditQuiz = () => {
       setSaving(true);
       setError('');
 
-      // Validate quiz data
       if (!quiz.title.trim() || !quiz.description.trim()) {
         throw new Error('Title and description are required');
       }
@@ -122,27 +143,33 @@ const EditQuiz = () => {
         throw new Error('At least one question is required');
       }
 
-      // Validate each question
       for (let i = 0; i < quiz.questions.length; i++) {
         const q = quiz.questions[i];
-        if (!q.question.trim()) {
-          throw new Error(`Question ${i + 1} is empty`);
-        }
-        if (q.options.some((opt) => !opt.trim())) {
-          throw new Error(`Question ${i + 1} has empty options`);
-        }
-        if (!q.answer.trim() || !q.options.includes(q.answer)) {
-          throw new Error(`Question ${i + 1} has invalid answer`);
-        }
+        if (!q.question.trim()) throw new Error(`Question ${i + 1} is empty`);
+        if (q.options.some((opt) => !opt.trim())) throw new Error(`Question ${i + 1} has empty options`);
+        if (!q.answer.trim() || !q.options.includes(q.answer)) throw new Error(`Question ${i + 1} has invalid answer`);
       }
 
-      await updateQuizApi({
+      const payload = {
         id,
         title: quiz.title,
         description: quiz.description,
         categories: quiz.categories,
-        questions: quiz.questions,
-      }).unwrap();
+        is_published: quiz.is_published,
+        questions: quiz.questions.map(({ id: qId, ...q }) => ({
+          ...q,
+          explanation: q.explanation || undefined,
+        })),
+      };
+
+      if (quiz.difficulty) payload.difficulty = quiz.difficulty;
+      else payload.difficulty = null;
+      if (quiz.time_limit_minutes) payload.time_limit_minutes = Number(quiz.time_limit_minutes);
+      else payload.time_limit_minutes = null;
+      if (quiz.time_per_question_seconds) payload.time_per_question_seconds = Number(quiz.time_per_question_seconds);
+      else payload.time_per_question_seconds = null;
+
+      await updateQuizApi(payload).unwrap();
 
       navigate('/profile', {
         state: { message: 'Quiz updated successfully!' },
@@ -159,10 +186,7 @@ const EditQuiz = () => {
       <div className='edit-quiz-container'>
         <Sidebar />
         <div className='edit-quiz-content'>
-          <div className='loading-state'>
-            <div className='spinner'></div>
-            <p>Loading quiz data...</p>
-          </div>
+          <LoadingSpinner text='Loading quiz data...' />
         </div>
       </div>
     );
@@ -252,6 +276,68 @@ const EditQuiz = () => {
             </div>
           </div>
 
+          {/* Quiz Settings */}
+          <div className='form-section'>
+            <h2>Quiz Settings</h2>
+
+            <div className='settings-row'>
+              <div className='form-group'>
+                <label htmlFor='edit-difficulty'>Difficulty</label>
+                <select
+                  id='edit-difficulty'
+                  value={quiz.difficulty}
+                  onChange={(e) => handleInputChange('difficulty', e.target.value)}
+                  className='form-select'>
+                  <option value=''>No difficulty set</option>
+                  <option value='easy'>Easy</option>
+                  <option value='medium'>Medium</option>
+                  <option value='hard'>Hard</option>
+                </select>
+              </div>
+
+              <div className='form-group'>
+                <label htmlFor='edit-time-limit'>Total Time Limit (minutes)</label>
+                <input
+                  id='edit-time-limit'
+                  type='number'
+                  min='0'
+                  value={quiz.time_limit_minutes}
+                  onChange={(e) => handleInputChange('time_limit_minutes', e.target.value)}
+                  placeholder='No limit'
+                  className='form-input'
+                />
+                <small>Leave empty for no overall time limit</small>
+              </div>
+
+              <div className='form-group'>
+                <label htmlFor='edit-time-per-q'>Time Per Question (seconds)</label>
+                <input
+                  id='edit-time-per-q'
+                  type='number'
+                  min='0'
+                  value={quiz.time_per_question_seconds}
+                  onChange={(e) => handleInputChange('time_per_question_seconds', e.target.value)}
+                  placeholder='No limit'
+                  className='form-input'
+                />
+                <small>Leave empty for no per-question timer</small>
+              </div>
+            </div>
+
+            <div className='form-group publish-toggle'>
+              <label className='toggle-label'>
+                <input
+                  type='checkbox'
+                  checked={quiz.is_published}
+                  onChange={(e) => handleInputChange('is_published', e.target.checked)}
+                />
+                <span className='toggle-text'>
+                  {quiz.is_published ? '🟢 Published — visible to everyone' : '🟡 Draft — only visible to you'}
+                </span>
+              </label>
+            </div>
+          </div>
+
           <div className='form-section'>
             <div className='questions-header'>
               <h2>Questions ({quiz.questions.length})</h2>
@@ -334,6 +420,23 @@ const EditQuiz = () => {
                     ))}
                   </select>
                 </div>
+
+                <div className='form-group'>
+                  <label>Explanation (optional)</label>
+                  <textarea
+                    value={question.explanation || ''}
+                    onChange={(e) =>
+                      handleQuestionChange(
+                        questionIndex,
+                        'explanation',
+                        e.target.value
+                      )
+                    }
+                    placeholder='Explain why this answer is correct (shown after answering)'
+                    className='form-textarea'
+                    rows='2'
+                  />
+                </div>
               </div>
             ))}
           </div>
@@ -346,7 +449,7 @@ const EditQuiz = () => {
               Cancel
             </button>
             <button onClick={handleSave} className='save-btn' disabled={saving}>
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? 'Saving...' : quiz.is_published ? 'Save & Publish' : 'Save as Draft'}
             </button>
           </div>
         </div>

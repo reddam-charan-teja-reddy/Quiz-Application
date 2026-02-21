@@ -37,6 +37,13 @@ const Sidebar = () => {
         </Link>
 
         <Link
+          to='/my-quizzes'
+          className={`nav-item ${isActive('/my-quizzes') ? 'active' : ''}`}>
+          <span className='nav-icon'>📝</span>
+          My Quizzes
+        </Link>
+
+        <Link
           to='/history'
           className={`nav-item ${isActive('/history') ? 'active' : ''}`}>
           <span className='nav-icon'>📚</span>
@@ -44,10 +51,31 @@ const Sidebar = () => {
         </Link>
 
         <Link
+          to='/leaderboard'
+          className={`nav-item ${isActive('/leaderboard') ? 'active' : ''}`}>
+          <span className='nav-icon'>🏆</span>
+          Leaderboard
+        </Link>
+
+        <Link
+          to='/stats'
+          className={`nav-item ${isActive('/stats') ? 'active' : ''}`}>
+          <span className='nav-icon'>📊</span>
+          Statistics
+        </Link>
+
+        <Link
           to='/profile'
           className={`nav-item ${isActive('/profile') ? 'active' : ''}`}>
           <span className='nav-icon'>👤</span>
           My Profile
+        </Link>
+
+        <Link
+          to='/settings'
+          className={`nav-item ${isActive('/settings') ? 'active' : ''}`}>
+          <span className='nav-icon'>⚙️</span>
+          Settings
         </Link>
       </nav>
 

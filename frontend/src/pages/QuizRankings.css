@@ -1,0 +1,166 @@
+.quiz-rankings-container {
+  display: flex;
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+.quiz-rankings-content {
+  flex: 1;
+  margin-left: 250px;
+  padding: 2rem;
+  max-width: 1000px;
+}
+
+.rankings-header {
+  margin-bottom: 2rem;
+}
+
+.rankings-header .back-btn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  transition: background 0.3s ease;
+}
+
+.rankings-header .back-btn:hover {
+  background: #4b5563;
+}
+
+.rankings-header h1 {
+  color: #1f2937;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+}
+
+.quiz-title-sub {
+  color: #6b7280;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.rankings-table-wrapper {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.rankings-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rankings-table thead {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.rankings-table th {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rankings-table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.95rem;
+}
+
+.rankings-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.rankings-table tbody tr:hover {
+  background: #f3f4f6;
+}
+
+.rankings-table tbody tr.top-1 {
+  background: #fef9c3;
+}
+
+.rankings-table tbody tr.top-2 {
+  background: #f0f0f0;
+}
+
+.rankings-table tbody tr.top-3 {
+  background: #fff7ed;
+}
+
+.rank-cell {
+  font-weight: 700;
+  text-align: center;
+  width: 60px;
+}
+
+.medal {
+  font-size: 1.5rem;
+}
+
+.rank-number {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.user-cell {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.score-cell {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.correct-cell {
+  color: #6b7280;
+}
+
+.date-cell {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.error-state {
+  text-align: center;
+  padding: 3rem;
+}
+
+.error-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.error-state h2 {
+  color: #374151;
+  margin-bottom: 1rem;
+}
+
+.error-state p {
+  color: #6b7280;
+}
+
+@media (max-width: 768px) {
+  .quiz-rankings-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+
+  .rankings-table th,
+  .rankings-table td {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .medal {
+    font-size: 1.2rem;
+  }
+}

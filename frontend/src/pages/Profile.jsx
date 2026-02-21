@@ -3,6 +3,7 @@ import { useAppSelector } from '../store/hooks';
 import { useGetProfileQuery } from '../store/api/apiSlice';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import LoadingSpinner from '../components/LoadingSpinner';
 import './Profile.css';
 
 const Profile = () => {
@@ -31,10 +32,7 @@ const Profile = () => {
       <div className='profile-container'>
         <Sidebar />
         <div className='profile-content'>
-          <div className='loading-state'>
-            <div className='spinner'></div>
-            <p>Loading your profile...</p>
-          </div>
+          <LoadingSpinner text='Loading your profile...' />
         </div>
       </div>
     );
@@ -82,7 +80,9 @@ const Profile = () => {
     );
   }
 
+  const displayName = profileData.display_name || user.username;
   const averageScore = Math.round(profileData.average_score ?? 0);
+  const bestScore = Math.round(profileData.best_score ?? 0);
   const totalQuizzesTaken = profileData.total_attempts ?? 0;
   const totalQuizzesCreated = profileData.created_quizzes?.length ?? 0;
   const memberSince = profileData.created_at
@@ -108,13 +108,26 @@ const Profile = () => {
         <div className='profile-header'>
           <div className='profile-avatar'>
             <div className='avatar-circle'>
-              {user.username.charAt(0).toUpperCase()}
+              {displayName.charAt(0).toUpperCase()}
             </div>
           </div>
           <div className='profile-info'>
-            <h1>{user.username}</h1>
-            <p className='user-status'>{user.status}</p>
+            <h1>{displayName}</h1>
+            {profileData.display_name && profileData.display_name !== user.username && (
+              <p className='username-sub'>@{user.username}</p>
+            )}
+            {profileData.email && (
+              <p className='user-email'>{profileData.email}</p>
+            )}
             <p className='member-since'>Member since {memberSince}</p>
+          </div>
+          <div className='profile-header-actions'>
+            <button onClick={() => navigate('/settings')} className='settings-link-btn'>
+              ⚙️ Settings
+            </button>
+            <button onClick={() => navigate('/stats')} className='stats-link-btn'>
+              📊 Statistics
+            </button>
           </div>
         </div>
 
@@ -128,6 +141,16 @@ const Profile = () => {
                 {averageScore}%
               </div>
               <div className='stat-label'>Average Score</div>
+            </div>
+
+            <div className='stat-card'>
+              <div className='stat-icon'>🏆</div>
+              <div
+                className='stat-number'
+                style={{ color: totalQuizzesTaken > 0 ? '#10b981' : undefined }}>
+                {bestScore}%
+              </div>
+              <div className='stat-label'>Best Score</div>
             </div>
 
             <div className='stat-card'>
@@ -159,7 +182,10 @@ const Profile = () => {
                     <div className='quiz-icon'>📋</div>
                     <div className='quiz-details'>
                       <h3>{quiz.title}</h3>
-                      <p>{quiz.description || `${quiz.num_questions} questions`}</p>
+                      <p>
+                        {quiz.num_questions} questions
+                        {quiz.difficulty && ` · ${quiz.difficulty}`}
+                      </p>
                     </div>
                     <div className='quiz-actions'>
                       <button

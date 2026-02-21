@@ -31,6 +31,9 @@ async def _create_indexes() -> None:
         IndexModel([("title", TEXT), ("description", TEXT)]),
         IndexModel([("created_at", ASCENDING)]),
         IndexModel([("is_deleted", ASCENDING)]),
+        IndexModel([("category", ASCENDING)]),
+        IndexModel([("difficulty", ASCENDING)]),
+        IndexModel([("is_published", ASCENDING)]),
     ])
     logger.info("Quizzes indexes ensured")
 
@@ -39,6 +42,8 @@ async def _create_indexes() -> None:
         IndexModel([("user_id", ASCENDING), ("created_at", ASCENDING)]),
         IndexModel([("quiz_id", ASCENDING)]),
         IndexModel([("user_id", ASCENDING), ("quiz_id", ASCENDING)]),
+        IndexModel([("status", ASCENDING)]),
+        IndexModel([("quiz_id", ASCENDING), ("status", ASCENDING), ("score", ASCENDING)]),
     ])
     logger.info("Attempts indexes ensured")
 

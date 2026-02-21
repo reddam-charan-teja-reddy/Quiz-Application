@@ -68,11 +68,44 @@
   margin: 0 0 0.5rem 0;
 }
 
-.user-status {
+.username-sub {
   color: #6b7280;
-  font-size: 1.125rem;
-  margin: 0;
-  text-transform: capitalize;
+  font-size: 1rem;
+  margin: 0 0 0.25rem 0;
+}
+
+.user-email {
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin: 0 0 0.25rem 0;
+}
+
+.profile-header-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.settings-link-btn,
+.stats-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #e0e7ff;
+  color: #3730a3;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.settings-link-btn:hover,
+.stats-link-btn:hover {
+  background: #c7d2fe;
+  transform: translateY(-1px);
 }
 
 .profile-stats {
@@ -275,12 +308,27 @@
 .view-all {
   text-align: center;
   padding: 1rem;
-  color: #6b7280;
-  font-style: italic;
 }
 
 .view-all p {
   margin: 0;
+}
+
+.view-history-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-history-btn:hover {
+  background: #5a6fd8;
+  transform: translateY(-1px);
 }
 
 .performance-summary {
@@ -403,6 +451,10 @@
     flex-direction: column;
     text-align: center;
     gap: 1rem;
+  }
+
+  .profile-header-actions {
+    justify-content: center;
   }
 
   .profile-info h1 {

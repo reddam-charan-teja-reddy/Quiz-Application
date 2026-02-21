@@ -190,6 +190,41 @@
   text-align: center;
 }
 
+.history-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.history-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.history-view-btn {
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #667eea;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.history-view-btn:hover { background: #eef2ff; }
+
+.history-delete-btn {
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #fca5a5;
+  background: white;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+.history-delete-btn:hover { background: #fef2f2; }
+
 .history-card.missing-quiz h3 {
   margin: 0 0 0.5rem 0;
   color: #991b1b;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCreateQuizMutation, useGenerateQuizMutation } from '../store/api/apiSlice';
 import { sanitizeText, sanitizeTextArea } from '../lib/sanitize';
 import Sidebar from '../components/Sidebar';
+import Toast from '../components/Toast';
 import './CreateQuiz.css';
 
 const CreateQuiz = () => {
@@ -13,17 +14,23 @@ const CreateQuiz = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState(null);
 
   const [quizData, setQuizData] = useState({
     title: '',
     description: '',
     categories: [''],
+    difficulty: '',
+    time_limit_minutes: '',
+    time_per_question_seconds: '',
+    is_published: true,
     questions: [
       {
         id: crypto.randomUUID(),
         question: '',
         options: ['', '', '', ''],
         answer: '',
+        explanation: '',
       },
     ],
   });
@@ -31,10 +38,18 @@ const CreateQuiz = () => {
   const [aiPrompt, setAiPrompt] = useState('');
 
   const handleInputChange = (field, value) => {
-    const sanitized = field === 'description'
-      ? sanitizeTextArea(value)
-      : sanitizeText(value, 200);
-    setQuizData((prev) => ({ ...prev, [field]: sanitized }));
+    if (field === 'description') {
+      setQuizData((prev) => ({ ...prev, [field]: sanitizeTextArea(value) }));
+    } else if (field === 'time_limit_minutes' || field === 'time_per_question_seconds') {
+      const num = value === '' ? '' : Math.max(0, parseInt(value) || 0);
+      setQuizData((prev) => ({ ...prev, [field]: num }));
+    } else if (field === 'is_published') {
+      setQuizData((prev) => ({ ...prev, [field]: value }));
+    } else if (field === 'difficulty') {
+      setQuizData((prev) => ({ ...prev, [field]: value }));
+    } else {
+      setQuizData((prev) => ({ ...prev, [field]: sanitizeText(value, 200) }));
+    }
   };
 
   const handleCategoryChange = (index, value) => {
@@ -58,7 +73,7 @@ const CreateQuiz = () => {
   };
 
   const handleQuestionChange = (questionIndex, field, value) => {
-    const sanitized = field === 'question'
+    const sanitized = field === 'question' || field === 'explanation'
       ? sanitizeTextArea(value, 1000)
       : sanitizeText(value);
     const newQuestions = [...quizData.questions];
@@ -87,6 +102,7 @@ const CreateQuiz = () => {
       question: '',
       options: ['', '', '', ''],
       answer: '',
+      explanation: '',
     };
     setQuizData((prev) => ({
       ...prev,
@@ -112,16 +128,23 @@ const CreateQuiz = () => {
 
     try {
       const generatedQuiz = await generateQuizApi(aiPrompt).unwrap();
-      setQuizData({
+      setQuizData((prev) => ({
+        ...prev,
         ...generatedQuiz,
+        difficulty: generatedQuiz.difficulty || prev.difficulty,
+        is_published: prev.is_published,
+        time_limit_minutes: prev.time_limit_minutes,
+        time_per_question_seconds: prev.time_per_question_seconds,
         questions: generatedQuiz.questions.map((q) => ({
           ...q,
           id: crypto.randomUUID(),
+          explanation: q.explanation || '',
         })),
-      });
+      }));
       setAiPrompt('');
+      setToast({ message: 'Quiz generated! Review and edit before saving.', type: 'success' });
     } catch (err) {
-      setError('Failed to generate quiz: ' + err.message);
+      setError('Failed to generate quiz: ' + (err.data?.detail || err.message));
     } finally {
       setIsGenerating(false);
     }
@@ -166,14 +189,24 @@ const CreateQuiz = () => {
 
     try {
       const quizToSubmit = {
-        ...quizData,
+        title: quizData.title,
+        description: quizData.description,
         categories: quizData.categories.filter((cat) => cat.trim()),
+        is_published: quizData.is_published,
+        questions: quizData.questions.map(({ id, ...q }) => ({
+          ...q,
+          explanation: q.explanation || undefined,
+        })),
       };
+
+      if (quizData.difficulty) quizToSubmit.difficulty = quizData.difficulty;
+      if (quizData.time_limit_minutes) quizToSubmit.time_limit_minutes = Number(quizData.time_limit_minutes);
+      if (quizData.time_per_question_seconds) quizToSubmit.time_per_question_seconds = Number(quizData.time_per_question_seconds);
 
       await createQuiz(quizToSubmit).unwrap();
       navigate('/home');
     } catch (err) {
-      setError('Failed to create quiz: ' + err.message);
+      setError('Failed to create quiz: ' + (err.data?.detail || err.message));
     } finally {
       setLoading(false);
     }
@@ -291,6 +324,65 @@ const CreateQuiz = () => {
               </div>
             </div>
 
+            {/* Quiz Settings */}
+            <div className='form-section'>
+              <h3>Quiz Settings</h3>
+
+              <div className='settings-row'>
+                <div className='form-group'>
+                  <label htmlFor='difficulty'>Difficulty</label>
+                  <select
+                    id='difficulty'
+                    value={quizData.difficulty}
+                    onChange={(e) => handleInputChange('difficulty', e.target.value)}>
+                    <option value=''>No difficulty set</option>
+                    <option value='easy'>Easy</option>
+                    <option value='medium'>Medium</option>
+                    <option value='hard'>Hard</option>
+                  </select>
+                </div>
+
+                <div className='form-group'>
+                  <label htmlFor='time_limit'>Total Time Limit (minutes)</label>
+                  <input
+                    id='time_limit'
+                    type='number'
+                    min='0'
+                    value={quizData.time_limit_minutes}
+                    onChange={(e) => handleInputChange('time_limit_minutes', e.target.value)}
+                    placeholder='No limit'
+                  />
+                  <small>Leave empty for no overall time limit</small>
+                </div>
+
+                <div className='form-group'>
+                  <label htmlFor='time_per_q'>Time Per Question (seconds)</label>
+                  <input
+                    id='time_per_q'
+                    type='number'
+                    min='0'
+                    value={quizData.time_per_question_seconds}
+                    onChange={(e) => handleInputChange('time_per_question_seconds', e.target.value)}
+                    placeholder='No limit'
+                  />
+                  <small>Leave empty for no per-question timer</small>
+                </div>
+              </div>
+
+              <div className='form-group publish-toggle'>
+                <label className='toggle-label'>
+                  <input
+                    type='checkbox'
+                    checked={quizData.is_published}
+                    onChange={(e) => handleInputChange('is_published', e.target.checked)}
+                  />
+                  <span className='toggle-text'>
+                    {quizData.is_published ? '🟢 Published — visible to everyone' : '🟡 Draft — only visible to you'}
+                  </span>
+                </label>
+              </div>
+            </div>
+
             {/* Questions */}
             <div className='form-section'>
               <div className='questions-header'>
@@ -382,6 +474,22 @@ const CreateQuiz = () => {
                       ))}
                     </select>
                   </div>
+
+                  <div className='form-group'>
+                    <label>Explanation (optional)</label>
+                    <textarea
+                      value={question.explanation}
+                      onChange={(e) =>
+                        handleQuestionChange(
+                          questionIndex,
+                          'explanation',
+                          e.target.value
+                        )
+                      }
+                      placeholder='Explain why this answer is correct (shown after answering)'
+                      rows='2'
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -395,12 +503,20 @@ const CreateQuiz = () => {
                 Cancel
               </button>
               <button type='submit' className='submit-btn' disabled={loading}>
-                {loading ? 'Creating...' : 'Create Quiz'}
+                {loading ? 'Creating...' : quizData.is_published ? 'Publish Quiz' : 'Save as Draft'}
               </button>
             </div>
           </form>
         </div>
       </div>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

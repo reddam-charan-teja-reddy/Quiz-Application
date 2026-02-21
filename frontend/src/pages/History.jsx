@@ -1,9 +1,20 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { useGetHistoryQuery } from '../store/api/apiSlice';
+import { useGetHistoryQuery, useDeleteAttemptMutation } from '../store/api/apiSlice';
+import ConfirmDialog from '../components/ConfirmDialog';
+import Toast from '../components/Toast';
+import LoadingSpinner from '../components/LoadingSpinner';
+import EmptyState from '../components/EmptyState';
 import './History.css';
 
 const History = () => {
+  const navigate = useNavigate();
   const { data: attempts = [], isLoading, error, refetch } = useGetHistoryQuery();
+  const [deleteAttempt, { isLoading: deleting }] = useDeleteAttemptMutation();
+
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [toast, setToast] = useState(null);
 
   const getScoreColor = (score) => {
     if (score >= 80) return '#10b981';
@@ -11,15 +22,23 @@ const History = () => {
     return '#ef4444';
   };
 
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    try {
+      await deleteAttempt(confirmDelete).unwrap();
+      setToast({ message: 'Attempt deleted', type: 'success' });
+    } catch {
+      setToast({ message: 'Failed to delete attempt', type: 'error' });
+    }
+    setConfirmDelete(null);
+  };
+
   if (isLoading) {
     return (
       <div className='history-container'>
         <Sidebar />
         <div className='history-content'>
-          <div className='loading-state'>
-            <div className='spinner'></div>
-            <p>Loading your quiz history...</p>
-          </div>
+          <LoadingSpinner text='Loading your quiz history...' />
         </div>
       </div>
     );
@@ -54,14 +73,13 @@ const History = () => {
         </div>
 
         {attempts.length === 0 ? (
-          <div className='empty-history'>
-            <div className='empty-icon'>📚</div>
-            <h3>No Quiz History</h3>
-            <p>
-              You haven't taken any quizzes yet. Start by taking a quiz to see
-              your history here!
-            </p>
-          </div>
+          <EmptyState
+            icon='📚'
+            title='No Quiz History'
+            message="You haven't taken any quizzes yet. Start by taking a quiz!"
+            action={() => navigate('/home')}
+            actionText='Browse Quizzes'
+          />
         ) : (
           <div className='history-grid'>
             {attempts.map((attempt) => {
@@ -71,12 +89,28 @@ const History = () => {
                 <div key={attempt.attempt_id} className='history-item'>
                   <div className='history-card'>
                     <h3>{attempt.quiz_title || 'Untitled Quiz'}</h3>
-                    {attempt.created_at && (
-                      <p className='attempt-date'>
-                        {new Date(attempt.created_at).toLocaleDateString()}
-                      </p>
-                    )}
+                    <div className='history-card-actions'>
+                      {attempt.quiz_id && (
+                        <button
+                          className='history-view-btn'
+                          onClick={() => navigate(`/quiz/${attempt.quiz_id}`)}
+                        >
+                          View Quiz
+                        </button>
+                      )}
+                      <button
+                        className='history-delete-btn'
+                        onClick={() => setConfirmDelete(attempt.attempt_id)}
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
+                  {attempt.created_at && (
+                    <p className='attempt-date'>
+                      {new Date(attempt.created_at).toLocaleDateString()}
+                    </p>
+                  )}
                   <div className='attempt-details'>
                     <div className='attempt-stats'>
                       <div className='stat-item'>
@@ -140,6 +174,21 @@ const History = () => {
               </div>
             </div>
           </div>
+        )}
+
+        <ConfirmDialog
+          open={!!confirmDelete}
+          title='Delete Attempt'
+          message='Are you sure you want to delete this attempt from your history?'
+          confirmText='Delete'
+          variant='danger'
+          loading={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(null)}
+        />
+
+        {toast && (
+          <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
         )}
       </div>
     </div>

@@ -7,6 +7,8 @@ import {
 } from '../store/api/apiSlice';
 import { startAttempt, clearAttempt } from '../store/slices/attemptSlice';
 import Sidebar from '../components/Sidebar';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ShareButton from '../components/ShareButton';
 import './QuizLeaderboard.css';
 
 const QuizLeaderboard = () => {
@@ -45,6 +47,7 @@ const QuizLeaderboard = () => {
           score: res.score ?? Math.round((correct.length / currentQuiz.questions.length) * 100),
           answersMap: Object.fromEntries(answers.map((a) => [a.question_id, a.selected_answer])),
         });
+        dispatch(clearAttempt());
       } catch {
         // Still show results even if save failed
         const total = currentQuiz.questions.length;
@@ -57,6 +60,7 @@ const QuizLeaderboard = () => {
           score,
           answersMap: Object.fromEntries(answers.map((a) => [a.question_id, a.selected_answer])),
         });
+        dispatch(clearAttempt());
       } finally {
         setLoading(false);
       }
@@ -68,7 +72,9 @@ const QuizLeaderboard = () => {
   const handleRetakeQuiz = async () => {
     try {
       const res = await startAttemptApi(currentQuiz.id).unwrap();
-      dispatch(startAttempt({ quiz: currentQuiz, attemptId: res.attempt_id }));
+      // Use shuffled questions from the server for the new attempt
+      const quizWithShuffled = { ...currentQuiz, questions: res.questions };
+      dispatch(startAttempt({ quiz: quizWithShuffled, attemptId: res.attempt_id }));
       navigate(`/quiz/${id}/0`);
     } catch {
       navigate(`/quiz/${id}`);
@@ -84,10 +90,7 @@ const QuizLeaderboard = () => {
       <div className='quiz-leaderboard-container'>
         <Sidebar />
         <div className='quiz-leaderboard-content'>
-          <div className='loading-state'>
-            <div className='spinner'></div>
-            <p>Saving your results...</p>
-          </div>
+          <LoadingSpinner text='Saving your results...' />
         </div>
       </div>
     );
@@ -123,6 +126,8 @@ const QuizLeaderboard = () => {
     if (score >= 50) return 'D';
     return 'F';
   };
+
+  const shareText = `I scored ${results.score}% on "${currentQuiz.title}"! Can you beat my score?`;
 
   return (
     <div className='quiz-leaderboard-container'>
@@ -190,7 +195,7 @@ const QuizLeaderboard = () => {
               <div className='answers-section correct-answers'>
                 <h4>✅ Correct Answers ({results.correct.length})</h4>
                 <div className='answers-list'>
-                  {results.correct.map((question, index) => (
+                  {results.correct.map((question) => (
                     <div key={question.id} className='answer-item correct'>
                       <div className='question-text'>
                         <strong>Q:</strong> {question.question}
@@ -198,6 +203,11 @@ const QuizLeaderboard = () => {
                       <div className='answer-text'>
                         <strong>Your Answer:</strong> {question.answer}
                       </div>
+                      {question.explanation && (
+                        <div className='explanation-text'>
+                          <strong>💡 Explanation:</strong> {question.explanation}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -208,18 +218,23 @@ const QuizLeaderboard = () => {
               <div className='answers-section wrong-answers'>
                 <h4>❌ Incorrect Answers ({results.wrong.length})</h4>
                 <div className='answers-list'>
-                  {results.wrong.map((question, index) => (
+                  {results.wrong.map((question) => (
                     <div key={question.id} className='answer-item wrong'>
                       <div className='question-text'>
                         <strong>Q:</strong> {question.question}
                       </div>
                       <div className='answer-text'>
                         <strong>Your Answer:</strong>{' '}
-                        {results.answersMap[question.id]}
+                        {results.answersMap[question.id] || '(no answer)'}
                       </div>
                       <div className='correct-answer-text'>
                         <strong>Correct Answer:</strong> {question.answer}
                       </div>
+                      {question.explanation && (
+                        <div className='explanation-text'>
+                          <strong>💡 Explanation:</strong> {question.explanation}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -230,6 +245,12 @@ const QuizLeaderboard = () => {
           <div className='leaderboard-actions'>
             <button onClick={handleRetakeQuiz} className='retake-btn'>
               🔄 Retake Quiz
+            </button>
+            <ShareButton text={shareText} />
+            <button
+              onClick={() => navigate(`/quiz/${id}/rankings`)}
+              className='rankings-btn'>
+              🏆 View Leaderboard
             </button>
             <button onClick={handleBackHome} className='home-btn'>
               🏠 Back to Home

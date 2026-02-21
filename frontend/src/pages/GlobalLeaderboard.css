@@ -1,0 +1,67 @@
+.gl-container { display: flex; min-height: 100vh; background: #f9fafb; }
+.gl-content { flex: 1; margin-left: 250px; padding: 2rem 3rem; max-width: 900px; }
+
+.gl-header { margin-bottom: 2rem; }
+.gl-header h1 { font-size: 1.75rem; color: #1f2937; margin: 0 0 0.25rem; }
+.gl-header p { color: #6b7280; margin: 0; }
+
+.gl-error { text-align: center; padding: 3rem; color: #6b7280; }
+
+.gl-table-wrapper {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.gl-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.gl-table thead { background: linear-gradient(135deg, #667eea, #764ba2); }
+.gl-table th {
+  color: white;
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.gl-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.gl-table tbody tr:hover { background: #f8faff; }
+.gl-table tbody tr:last-child { border-bottom: none; }
+
+.gl-table td { padding: 0.875rem 1.25rem; color: #374151; }
+
+.rank-cell { font-size: 1.25rem; font-weight: 700; width: 60px; text-align: center; }
+.user-cell { display: flex; align-items: center; gap: 0.75rem; font-weight: 500; }
+.score-cell { font-weight: 700; font-size: 1.05rem; }
+.attempts-cell { color: #6b7280; }
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+tr.top-1 { background: #fefce8; }
+tr.top-2 { background: #f8fafc; }
+tr.top-3 { background: #fff7ed; }
+
+@media (max-width: 768px) {
+  .gl-content { margin-left: 0; padding: 1rem; }
+  .gl-table th, .gl-table td { padding: 0.625rem 0.75rem; font-size: 0.85rem; }
+}

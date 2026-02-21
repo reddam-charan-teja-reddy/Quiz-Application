@@ -1,0 +1,82 @@
+.myquizzes-container { display: flex; min-height: 100vh; }
+.myquizzes-content { flex: 1; margin-left: 250px; padding: 2rem 3rem; }
+
+.myquizzes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.myquizzes-header h1 { font-size: 1.75rem; color: #1f2937; margin: 0; }
+
+.create-btn {
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  border: none;
+  background: #667eea;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+.create-btn:hover { background: #5a67d8; }
+
+.myquizzes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.5rem;
+}
+
+.myquiz-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+}
+
+.myquiz-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+.myquiz-card-header h3 { margin: 0; font-size: 1.1rem; color: #1f2937; }
+
+.myquiz-badges { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.badge.draft { background: #fef3c7; color: #92400e; }
+.badge.difficulty { background: #f3f4f6; }
+
+.myquiz-desc { color: #6b7280; font-size: 0.875rem; margin: 0 0 0.75rem; line-height: 1.5; }
+
+.myquiz-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin-bottom: 1rem;
+}
+
+.myquiz-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.action-btn {
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.action-btn:hover { background: #f3f4f6; }
+.action-btn.delete { color: #ef4444; border-color: #fca5a5; }
+.action-btn.delete:hover { background: #fef2f2; }
+.action-btn.edit { color: #667eea; border-color: #a5b4fc; }
+.action-btn.edit:hover { background: #eef2ff; }

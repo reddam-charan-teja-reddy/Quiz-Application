@@ -1,0 +1,41 @@
+.quiz-timer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.timer-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.timer-icon { font-size: 1.25rem; }
+
+.timer-bar {
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.timer-fill {
+  height: 100%;
+  background: #667eea;
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+.quiz-timer.low .timer-text  { color: #f59e0b; }
+.quiz-timer.low .timer-fill  { background: #f59e0b; }
+
+.quiz-timer.critical .timer-text { color: #ef4444; animation: pulse 1s infinite; }
+.quiz-timer.critical .timer-fill { background: #ef4444; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}

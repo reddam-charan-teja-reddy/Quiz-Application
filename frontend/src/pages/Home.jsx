@@ -1,36 +1,69 @@
-import { useState, useMemo } from 'react';
-import { useGetQuizzesQuery } from '../store/api/apiSlice';
-import { useAppSelector } from '../store/hooks';
+import { useState, useCallback, useEffect } from 'react';
+import { useGetQuizzesQuery, useGetCategoriesQuery } from '../store/api/apiSlice';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
+import {
+  setSearchTerm,
+  setSelectedCategory,
+  setSelectedDifficulty,
+  setSortBy,
+  setSortOrder,
+  setCurrentPage,
+} from '../store/slices/quizSlice';
 import Sidebar from '../components/Sidebar';
 import QuizCard from '../components/QuizCard';
+import Pagination from '../components/Pagination';
+import LoadingSpinner from '../components/LoadingSpinner';
+import EmptyState from '../components/EmptyState';
 import './Home.css';
 
 const Home = () => {
+  const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const { data: quizzes = [], isLoading } = useGetQuizzesQuery(undefined, {
+  const {
+    searchTerm,
+    selectedCategory,
+    selectedDifficulty,
+    sortBy,
+    sortOrder,
+    currentPage,
+    pageSize,
+  } = useAppSelector((state) => state.quiz);
+
+  // Local search input with debounce
+  const [localSearch, setLocalSearch] = useState(searchTerm);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      dispatch(setSearchTerm(localSearch));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [localSearch, dispatch]);
+
+  // Build query params for server-side filtering
+  const queryParams = {};
+  if (searchTerm) queryParams.search = searchTerm;
+  if (selectedCategory) queryParams.category = selectedCategory;
+  if (selectedDifficulty) queryParams.difficulty = selectedDifficulty;
+  if (sortBy) queryParams.sort = sortBy;
+  if (sortOrder) queryParams.order = sortOrder;
+  queryParams.page = currentPage;
+  queryParams.page_size = pageSize;
+
+  const { data, isLoading } = useGetQuizzesQuery(queryParams, {
     skip: !user,
   });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
 
-  // Get unique categories
-  const categories = useMemo(
-    () => [...new Set(quizzes.flatMap((quiz) => quiz.categories || []))],
-    [quizzes]
+  const quizzes = data?.quizzes ?? [];
+  const totalQuizzes = data?.total ?? 0;
+  const totalPages = Math.ceil(totalQuizzes / pageSize);
+
+  // Get categories from dedicated endpoint
+  const { data: categories = [] } = useGetCategoriesQuery(undefined, { skip: !user });
+
+  const handlePageChange = useCallback(
+    (page) => dispatch(setCurrentPage(page)),
+    [dispatch]
   );
-
-  // Filter quizzes based on search and category
-  const filteredQuizzes = useMemo(() => {
-    return quizzes.filter((quiz) => {
-      const matchesSearch =
-        quiz.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        quiz.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory =
-        !selectedCategory ||
-        (quiz.categories && quiz.categories.includes(selectedCategory));
-      return matchesSearch && matchesCategory;
-    });
-  }, [quizzes, searchTerm, selectedCategory]);
 
   return (
     <div className='home-container'>
@@ -47,23 +80,47 @@ const Home = () => {
             <input
               type='text'
               placeholder='Search quizzes...'
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               className='search-input'
             />
           </div>
 
-          <div className='category-filter'>
+          <div className='filter-group'>
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => dispatch(setSelectedCategory(e.target.value))}
               className='category-select'>
               <option value=''>All Categories</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
+              {categories.map((cat) => (
+                <option key={cat.name} value={cat.name}>
+                  {cat.name} ({cat.count})
                 </option>
               ))}
+            </select>
+
+            <select
+              value={selectedDifficulty}
+              onChange={(e) => dispatch(setSelectedDifficulty(e.target.value))}
+              className='category-select'>
+              <option value=''>All Difficulties</option>
+              <option value='easy'>Easy</option>
+              <option value='medium'>Medium</option>
+              <option value='hard'>Hard</option>
+            </select>
+
+            <select
+              value={`${sortBy}-${sortOrder}`}
+              onChange={(e) => {
+                const [s, o] = e.target.value.split('-');
+                dispatch(setSortBy(s));
+                dispatch(setSortOrder(o));
+              }}
+              className='category-select'>
+              <option value='date-desc'>Newest First</option>
+              <option value='date-asc'>Oldest First</option>
+              <option value='title-asc'>Title A–Z</option>
+              <option value='title-desc'>Title Z–A</option>
             </select>
           </div>
         </div>
@@ -71,25 +128,34 @@ const Home = () => {
         <div className='quizzes-grid'>
           {isLoading ? (
             <div className='loading-state'>
-              <div className='spinner'></div>
-              <p>Loading quizzes...</p>
+              <LoadingSpinner text='Loading quizzes...' />
             </div>
-          ) : filteredQuizzes.length === 0 ? (
-            <div className='empty-state'>
-              <div className='empty-icon'>📚</div>
-              <h3>No quizzes found</h3>
-              <p>
-                {searchTerm || selectedCategory
-                  ? 'Try adjusting your search or category filter.'
-                  : 'No quizzes available yet. Create your first quiz!'}
-              </p>
+          ) : quizzes.length === 0 ? (
+            <div className='loading-state'>
+              <EmptyState
+                icon='📚'
+                title='No quizzes found'
+                message={
+                  searchTerm || selectedCategory || selectedDifficulty
+                    ? 'Try adjusting your search or filters.'
+                    : 'No quizzes available yet. Create your first quiz!'
+                }
+              />
             </div>
           ) : (
-            filteredQuizzes.map((quiz) => (
+            quizzes.map((quiz) => (
               <QuizCard key={quiz.id} quiz={quiz} />
             ))
           )}
         </div>
+
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,12 +1,12 @@
 """
-Quiz attempt routes — server-side scoring, attempt history.
+Quiz attempt routes — server-side scoring, attempt history, leaderboards.
 
-Replaces the old history routes that stored data inside the user document.
-Attempts are now stored in a dedicated `attempts` collection with server-side
-score calculation.
+Attempts are stored in a dedicated `attempts` collection with server-side
+score calculation. Questions and options are randomized at attempt start.
 """
 
 import logging
+import random
 from datetime import datetime, timezone
 
 from bson import ObjectId
@@ -19,25 +19,29 @@ from models import (
     AttemptResult,
     AttemptSummary,
     AttemptListResponse,
+    LeaderboardEntry,
+    QuizLeaderboardResponse,
+    GlobalLeaderboardEntry,
+    GlobalLeaderboardResponse,
     ErrorResponse,
 )
 from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/attempts", tags=["attempts"])
+router = APIRouter(prefix="/api/v1", tags=["attempts"])
 
 
 # ── Start an attempt ─────────────────────────────────────────────────────────
 
 @router.post(
-    "/start/{quiz_id}",
+    "/attempts/start/{quiz_id}",
     response_model=AttemptStartResponse,
     status_code=status.HTTP_201_CREATED,
     responses={404: {"model": ErrorResponse}},
 )
 async def start_attempt(quiz_id: str, user: dict = Depends(get_current_user)):
-    """Begin a quiz attempt — creates an attempt record."""
+    """Begin a quiz attempt — creates an attempt record with randomized order."""
     try:
         quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id), "is_deleted": {"$ne": True}})
     except Exception:
@@ -46,13 +50,25 @@ async def start_attempt(quiz_id: str, user: dict = Depends(get_current_user)):
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found")
 
+    # Randomize question order (#9) and option order (#10)
+    questions = list(quiz.get("questions", []))
+    random.shuffle(questions)
+    for q in questions:
+        correct_answer = q["answer"]
+        options = list(q["options"])
+        random.shuffle(options)
+        q["options"] = options
+        # answer field stays the same text value — it's matched by string
+        q["answer"] = correct_answer
+
     attempt_doc = {
         "user_id": user["id"],
         "quiz_id": quiz_id,
         "quiz_title": quiz["title"],
+        "questions": questions,  # Store the shuffled snapshot
         "answers": [],
         "score": 0,
-        "total": len(quiz.get("questions", [])),
+        "total": len(questions),
         "correct_count": 0,
         "status": "in_progress",
         "created_at": datetime.now(timezone.utc),
@@ -65,14 +81,21 @@ async def start_attempt(quiz_id: str, user: dict = Depends(get_current_user)):
     return AttemptStartResponse(
         attempt_id=attempt_id,
         quiz_id=quiz_id,
-        total_questions=len(quiz.get("questions", [])),
+        total_questions=len(questions),
+        questions=[{
+            "id": q["id"],
+            "question": q["question"],
+            "options": q["options"],
+            "answer": q["answer"],
+            "explanation": q.get("explanation", ""),
+        } for q in questions],
     )
 
 
 # ── Finish an attempt (submit all answers, server scores) ────────────────────
 
 @router.post(
-    "/{attempt_id}/finish",
+    "/attempts/{attempt_id}/finish",
     response_model=AttemptResult,
     responses={404: {"model": ErrorResponse}, 400: {"model": ErrorResponse}},
 )
@@ -96,21 +119,24 @@ async def finish_attempt(
     if attempt.get("status") == "completed":
         raise HTTPException(status_code=400, detail="This attempt has already been completed")
 
-    # Fetch the quiz to get correct answers
-    try:
-        quiz = await db.quizzes.find_one({"_id": ObjectId(attempt["quiz_id"])})
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to load quiz for scoring")
-
-    if not quiz:
-        raise HTTPException(status_code=404, detail="Quiz no longer exists")
-
-    # Build answer lookup from quiz questions
+    # Use the shuffled questions snapshot stored in the attempt (not the quiz)
+    attempt_questions = attempt.get("questions", [])
     correct_answers: dict[str, str] = {}
     question_lookup: dict[str, dict] = {}
-    for q in quiz.get("questions", []):
+    for q in attempt_questions:
         correct_answers[q["id"]] = q["answer"]
         question_lookup[q["id"]] = q
+
+    # Fall back to quiz if attempt has no snapshot (old attempts)
+    if not attempt_questions:
+        try:
+            quiz = await db.quizzes.find_one({"_id": ObjectId(attempt["quiz_id"])})
+        except Exception:
+            quiz = None
+        if quiz:
+            for q in quiz.get("questions", []):
+                correct_answers[q["id"]] = q["answer"]
+                question_lookup[q["id"]] = q
 
     # Server-side scoring
     details: list[dict] = []
@@ -128,9 +154,10 @@ async def finish_attempt(
             "selected_answer": submission.selected_answer,
             "correct_answer": expected or "",
             "is_correct": is_correct,
+            "explanation": q_data.get("explanation", ""),
         })
 
-    total = len(quiz.get("questions", []))
+    total = len(attempt_questions) or len(correct_answers)
     score = round((correct_count / total) * 100) if total > 0 else 0
 
     # Update the attempt document
@@ -170,7 +197,7 @@ async def finish_attempt(
 
 # ── List user's attempts (history) ──────────────────────────────────────────
 
-@router.get("", response_model=AttemptListResponse)
+@router.get("/attempts", response_model=AttemptListResponse)
 async def list_attempts(user: dict = Depends(get_current_user)):
     """Return all completed attempts for the authenticated user (newest first)."""
     cursor = (
@@ -199,7 +226,7 @@ async def list_attempts(user: dict = Depends(get_current_user)):
 # ── Get single attempt detail ────────────────────────────────────────────────
 
 @router.get(
-    "/{attempt_id}",
+    "/attempts/{attempt_id}",
     response_model=AttemptResult,
     responses={404: {"model": ErrorResponse}},
 )
@@ -227,3 +254,123 @@ async def get_attempt(attempt_id: str, user: dict = Depends(get_current_user)):
         details=doc.get("details", []),
         created_at=doc.get("created_at"),
     )
+
+
+# ── Delete a single attempt ─────────────────────────────────────────────────
+
+@router.delete(
+    "/attempts/{attempt_id}",
+    responses={404: {"model": ErrorResponse}},
+)
+async def delete_attempt(attempt_id: str, user: dict = Depends(get_current_user)):
+    """Delete one of the user's own completed attempts."""
+    try:
+        doc = await db.attempts.find_one({"_id": ObjectId(attempt_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid attempt ID format")
+
+    if not doc:
+        raise HTTPException(status_code=404, detail="Attempt not found")
+
+    if doc["user_id"] != user["id"]:
+        raise HTTPException(status_code=403, detail="This attempt does not belong to you")
+
+    await db.attempts.delete_one({"_id": ObjectId(attempt_id)})
+    logger.info("Attempt deleted: %s by user %s", attempt_id, user["username"])
+    return {"message": "Attempt deleted successfully"}
+
+
+# ── Quiz-specific leaderboard ────────────────────────────────────────────────
+
+@router.get(
+    "/quizzes/{quiz_id}/leaderboard",
+    response_model=QuizLeaderboardResponse,
+    responses={404: {"model": ErrorResponse}},
+)
+async def quiz_leaderboard(quiz_id: str):
+    """Return the top scores for a specific quiz (best attempt per user)."""
+    try:
+        quiz = await db.quizzes.find_one({"_id": ObjectId(quiz_id), "is_deleted": {"$ne": True}})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid quiz ID format")
+
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+
+    pipeline = [
+        {"$match": {"quiz_id": quiz_id, "status": "completed"}},
+        {"$sort": {"score": -1, "created_at": 1}},
+        {
+            "$group": {
+                "_id": "$user_id",
+                "username": {"$first": "$username"},
+                "score": {"$max": "$score"},
+                "total": {"$first": "$total"},
+                "correct_count": {"$first": "$correct_count"},
+                "created_at": {"$first": "$created_at"},
+            }
+        },
+        {"$sort": {"score": -1}},
+        {"$limit": 50},
+    ]
+
+    entries: list[LeaderboardEntry] = []
+    async for doc in db.attempts.aggregate(pipeline):
+        # username may not be stored in attempt; look up if missing
+        username = doc.get("username") or ""
+        if not username:
+            user_doc = await db.users.find_one({"_id": ObjectId(doc["_id"])})
+            username = user_doc["username"] if user_doc else "Unknown"
+        entries.append(
+            LeaderboardEntry(
+                username=username,
+                score=doc.get("score", 0),
+                total=doc.get("total", 0),
+                correct_count=doc.get("correct_count", 0),
+                created_at=doc.get("created_at"),
+            )
+        )
+
+    return QuizLeaderboardResponse(
+        quiz_id=quiz_id,
+        quiz_title=quiz.get("title", ""),
+        entries=entries,
+    )
+
+
+# ── Global leaderboard ──────────────────────────────────────────────────────
+
+@router.get(
+    "/leaderboard",
+    response_model=GlobalLeaderboardResponse,
+)
+async def global_leaderboard():
+    """Return aggregate stats across all users ranked by average score."""
+    pipeline = [
+        {"$match": {"status": "completed"}},
+        {
+            "$group": {
+                "_id": "$user_id",
+                "total_attempts": {"$sum": 1},
+                "average_score": {"$avg": "$score"},
+                "best_score": {"$max": "$score"},
+            }
+        },
+        {"$sort": {"average_score": -1}},
+        {"$limit": 50},
+    ]
+
+    entries: list[GlobalLeaderboardEntry] = []
+    async for doc in db.attempts.aggregate(pipeline):
+        user_doc = await db.users.find_one({"_id": ObjectId(doc["_id"])})
+        username = user_doc["username"] if user_doc else "Unknown"
+        entries.append(
+            GlobalLeaderboardEntry(
+                username=username,
+                total_attempts=doc.get("total_attempts", 0),
+                average_score=round(doc.get("average_score", 0), 1),
+                best_score=doc.get("best_score", 0),
+            )
+        )
+
+    return GlobalLeaderboardResponse(entries=entries)

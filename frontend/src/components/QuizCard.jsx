@@ -1,6 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import './QuizCard.css';
 
+const difficultyColors = {
+  easy: '#10b981',
+  medium: '#f59e0b',
+  hard: '#ef4444',
+};
+
 const QuizCard = ({ quiz, showScore = false, score = null }) => {
   const navigate = useNavigate();
 
@@ -12,9 +18,18 @@ const QuizCard = ({ quiz, showScore = false, score = null }) => {
     <div className='quiz-card' onClick={handleClick}>
       <div className='quiz-card-header'>
         <h3 className='quiz-title'>{quiz.title}</h3>
-        {showScore && score !== null && (
-          <div className='quiz-score'>{score}%</div>
-        )}
+        <div className='quiz-card-badges'>
+          {quiz.difficulty && (
+            <span
+              className='difficulty-badge'
+              style={{ background: difficultyColors[quiz.difficulty] || '#6b7280' }}>
+              {quiz.difficulty}
+            </span>
+          )}
+          {showScore && score !== null && (
+            <div className='quiz-score'>{score}%</div>
+          )}
+        </div>
       </div>
 
       <p className='quiz-description'>{quiz.description}</p>

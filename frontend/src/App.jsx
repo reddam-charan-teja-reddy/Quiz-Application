@@ -15,10 +15,15 @@ import Home from './pages/Home';
 import QuizDetail from './pages/QuizDetail';
 import QuizQuestion from './pages/QuizQuestion';
 import QuizLeaderboard from './pages/QuizLeaderboard';
+import QuizRankings from './pages/QuizRankings';
 import History from './pages/History';
 import Profile from './pages/Profile';
 import CreateQuiz from './pages/CreateQuiz';
 import EditQuiz from './pages/EditQuiz';
+import MyQuizzes from './pages/MyQuizzes';
+import Settings from './pages/Settings';
+import GlobalLeaderboard from './pages/GlobalLeaderboard';
+import StatsPage from './pages/StatsPage';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
@@ -72,6 +77,14 @@ function App() {
               }
             />
             <Route
+              path='/quiz/:id/rankings'
+              element={
+                <ProtectedRoute>
+                  <QuizRankings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path='/history'
               element={
                 <ProtectedRoute>
@@ -100,6 +113,38 @@ function App() {
               element={
                 <ProtectedRoute>
                   <EditQuiz />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/my-quizzes'
+              element={
+                <ProtectedRoute>
+                  <MyQuizzes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/settings'
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/leaderboard'
+              element={
+                <ProtectedRoute>
+                  <GlobalLeaderboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/stats'
+              element={
+                <ProtectedRoute>
+                  <StatsPage />
                 </ProtectedRoute>
               }
             />

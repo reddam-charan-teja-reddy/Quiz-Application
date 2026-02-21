@@ -27,6 +27,24 @@
   color: #1f2937;
   margin: 0;
   line-height: 1.4;
+  flex: 1;
+}
+
+.quiz-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.difficulty-badge {
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .quiz-score {

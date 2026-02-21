@@ -1,17 +1,24 @@
-"""Authentication routes — register, login, token refresh, logout."""
+"""Authentication routes — register, login, token refresh, logout, change password."""
 
 import logging
 from datetime import datetime, timezone
 
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from jose import JWTError, jwt
 
 from config import settings
 from db import db
 from limiter import limiter
-from models import RegisterRequest, LoginRequest, AuthResponse, ErrorResponse
+from models import (
+    RegisterRequest,
+    LoginRequest,
+    AuthResponse,
+    ChangePasswordRequest,
+    ErrorResponse,
+)
 from utils.auth import (
+    get_current_user,
     hash_password,
     verify_password,
     create_access_token,
@@ -153,3 +160,36 @@ async def logout(response: Response):
     """Clear the refresh token cookie."""
     response.delete_cookie(key="refresh_token", path="/api/v1/auth")
     return {"message": "Logged out successfully"}
+
+
+@router.put(
+    "/password",
+    responses={400: {"model": ErrorResponse}},
+)
+async def change_password(
+    body: ChangePasswordRequest,
+    user: dict = Depends(get_current_user),
+):
+    """Change the authenticated user's password."""
+    user_doc = await db.users.find_one({"_id": ObjectId(user["id"])})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not verify_password(body.current_password, user_doc.get("password_hash", "")):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    if body.current_password == body.new_password:
+        raise HTTPException(status_code=400, detail="New password must differ from current")
+
+    await db.users.update_one(
+        {"_id": ObjectId(user["id"])},
+        {
+            "$set": {
+                "password_hash": hash_password(body.new_password),
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+
+    logger.info("Password changed for user %s", user["username"])
+    return {"message": "Password changed successfully"}

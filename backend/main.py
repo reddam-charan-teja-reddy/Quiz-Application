@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="QuizApp API",
     description="Backend API for the Quiz application — create, take, and track quizzes.",
-    version="0.2.0",
+    version="0.4.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -92,7 +92,7 @@ app.include_router(generate_router)
 # ── Health ───────────────────────────────────────────────────────────────────
 @app.get("/health", tags=["health"])
 async def health_check():
-    return {"status": "ok", "version": "0.2.0"}
+    return {"status": "ok", "version": "0.4.0"}
 
 
 if __name__ == "__main__":

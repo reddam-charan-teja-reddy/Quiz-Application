@@ -1,16 +1,40 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useGetQuizQuery, useStartAttemptMutation } from '../store/api/apiSlice';
-import { useAppDispatch } from '../store/hooks';
+import {
+  useGetQuizQuery,
+  useStartAttemptMutation,
+  useDeleteQuizMutation,
+  useDuplicateQuizMutation,
+} from '../store/api/apiSlice';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { startAttempt } from '../store/slices/attemptSlice';
 import Sidebar from '../components/Sidebar';
+import ShareButton from '../components/ShareButton';
+import ConfirmDialog from '../components/ConfirmDialog';
+import Toast from '../components/Toast';
 import './QuizDetail.css';
 
 const QuizDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
   const { data: quiz, isLoading, error } = useGetQuizQuery(id);
   const [startAttemptApi] = useStartAttemptMutation();
+  const [deleteQuiz, { isLoading: deleting }] = useDeleteQuizMutation();
+  const [duplicateQuiz] = useDuplicateQuizMutation();
+
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const isAuthor = quiz && user && quiz.author === user.username;
+
+  const getDifficultyColor = (d) => {
+    if (d === 'easy') return '#10b981';
+    if (d === 'medium') return '#f59e0b';
+    if (d === 'hard') return '#ef4444';
+    return '#6b7280';
+  };
 
   if (isLoading) {
     return (
@@ -46,10 +70,33 @@ const QuizDetail = () => {
   const handleStartQuiz = async () => {
     try {
       const result = await startAttemptApi(quiz.id).unwrap();
-      dispatch(startAttempt({ quiz, attemptId: result.attempt_id }));
+      // Use shuffled questions from the server instead of original quiz order
+      const quizWithShuffled = { ...quiz, questions: result.questions };
+      dispatch(startAttempt({ quiz: quizWithShuffled, attemptId: result.attempt_id }));
       navigate(`/quiz/${id}/0`);
     } catch {
       // Error handled by RTK Query
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteQuiz(id).unwrap();
+      setToast({ message: 'Quiz deleted', type: 'success' });
+      setTimeout(() => navigate('/home'), 500);
+    } catch {
+      setToast({ message: 'Failed to delete quiz', type: 'error' });
+    }
+    setConfirmDelete(false);
+  };
+
+  const handleDuplicate = async () => {
+    try {
+      const result = await duplicateQuiz(id).unwrap();
+      setToast({ message: 'Quiz duplicated!', type: 'success' });
+      setTimeout(() => navigate(`/edit/${result.id}`), 500);
+    } catch {
+      setToast({ message: 'Failed to duplicate quiz', type: 'error' });
     }
   };
 
@@ -63,6 +110,22 @@ const QuizDetail = () => {
             <button onClick={() => navigate('/home')} className='back-btn'>
               ← Back to Home
             </button>
+            <div className='quiz-header-actions'>
+              <ShareButton title={quiz.title} url={window.location.href} />
+              {isAuthor && (
+                <>
+                  <button onClick={() => navigate(`/edit/${id}`)} className='edit-action-btn'>
+                    ✏️ Edit
+                  </button>
+                  <button onClick={handleDuplicate} className='dup-action-btn'>
+                    📋 Duplicate
+                  </button>
+                  <button onClick={() => setConfirmDelete(true)} className='delete-action-btn'>
+                    🗑️ Delete
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           <div className='quiz-info'>
@@ -78,6 +141,31 @@ const QuizDetail = () => {
                 <span className='meta-icon'>❓</span>
                 <span>{quiz.num_questions} Questions</span>
               </div>
+              {quiz.difficulty && (
+                <div className='meta-item'>
+                  <span
+                    className='difficulty-badge'
+                    style={{
+                      background: getDifficultyColor(quiz.difficulty) + '20',
+                      color: getDifficultyColor(quiz.difficulty),
+                    }}
+                  >
+                    {quiz.difficulty}
+                  </span>
+                </div>
+              )}
+              {quiz.time_limit_minutes && (
+                <div className='meta-item'>
+                  <span className='meta-icon'>⏱️</span>
+                  <span>{quiz.time_limit_minutes} min total</span>
+                </div>
+              )}
+              {quiz.time_per_question_seconds && (
+                <div className='meta-item'>
+                  <span className='meta-icon'>⏱️</span>
+                  <span>{quiz.time_per_question_seconds}s per question</span>
+                </div>
+              )}
             </div>
 
             {quiz.categories && quiz.categories.length > 0 && (
@@ -121,9 +209,30 @@ const QuizDetail = () => {
             <button onClick={handleStartQuiz} className='start-btn'>
               Start Quiz
             </button>
+            <button
+              onClick={() => navigate(`/quiz/${id}/rankings`)}
+              className='leaderboard-link-btn'
+            >
+              🏆 View Leaderboard
+            </button>
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title='Delete Quiz'
+        message='Are you sure you want to delete this quiz? This action cannot be undone.'
+        confirmText='Delete'
+        variant='danger'
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
+
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+      )}
     </div>
   );
 };

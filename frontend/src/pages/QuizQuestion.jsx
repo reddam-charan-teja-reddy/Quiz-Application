@@ -1,21 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { recordAnswer } from '../store/slices/attemptSlice';
+import { useFinishAttemptMutation } from '../store/api/apiSlice';
 import Sidebar from '../components/Sidebar';
+import QuizTimer from '../components/QuizTimer';
 import './QuizQuestion.css';
 
 const QuizQuestion = () => {
   const { id, q_id } = useParams();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { currentQuiz, attemptId } = useAppSelector((state) => state.attempt);
+  const { currentQuiz, attemptId, answers, startTime } = useAppSelector((state) => state.attempt);
+  const [finishAttemptApi] = useFinishAttemptMutation();
 
   const [selectedAnswer, setSelectedAnswer] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
   const questionIndex = parseInt(q_id);
+
+  // Calculate remaining seconds for total quiz timer (persists across questions)
+  const totalTimerSeconds = useMemo(() => {
+    if (!currentQuiz?.time_limit_minutes || currentQuiz?.time_per_question_seconds) return null;
+    const elapsed = Math.floor((Date.now() - new Date(startTime).getTime()) / 1000);
+    const total = currentQuiz.time_limit_minutes * 60;
+    return Math.max(0, total - elapsed);
+    // Only recalculate when quiz config or startTime changes, not on question navigation
+  }, [currentQuiz?.time_limit_minutes, currentQuiz?.time_per_question_seconds, startTime]);
 
   // Redirect if no active attempt — done in useEffect, not during render (#15)
   useEffect(() => {
@@ -37,6 +49,56 @@ const QuizQuestion = () => {
     setShowFeedback(false);
     setIsCorrect(false);
   }, [questionIndex]);
+
+  const handleNextQuestion = useCallback(() => {
+    const nextIndex = questionIndex + 1;
+    if (currentQuiz && nextIndex < currentQuiz.questions.length) {
+      navigate(`/quiz/${id}/${nextIndex}`);
+    } else {
+      navigate(`/quiz/${id}/leaderboard`);
+    }
+  }, [questionIndex, currentQuiz, id, navigate]);
+
+  // Auto-submit on per-question timeout
+  const handleTimeUp = useCallback(() => {
+    if (showFeedback) return;
+    // Auto-submit with no answer (wrong)
+    if (currentQuiz) {
+      const question = currentQuiz.questions[questionIndex];
+      if (question) {
+        dispatch(
+          recordAnswer({
+            questionId: question.id,
+            selectedAnswer: '',
+            isCorrect: false,
+            question,
+          })
+        );
+        setIsCorrect(false);
+        setShowFeedback(true);
+      }
+    }
+  }, [showFeedback, currentQuiz, questionIndex, dispatch]);
+
+  // Auto-submit entire quiz when total time limit expires
+  const handleTotalTimeUp = useCallback(async () => {
+    if (!currentQuiz || !attemptId) return;
+    // Record current question as unanswered if not already answered
+    const question = currentQuiz.questions[questionIndex];
+    const alreadyAnswered = answers.some((a) => a.question_id === question?.id);
+    if (question && !alreadyAnswered && !showFeedback) {
+      dispatch(
+        recordAnswer({
+          questionId: question.id,
+          selectedAnswer: '',
+          isCorrect: false,
+          question,
+        })
+      );
+    }
+    // Navigate to leaderboard — answers will be submitted there
+    navigate(`/quiz/${id}/leaderboard`, { replace: true });
+  }, [currentQuiz, attemptId, questionIndex, answers, showFeedback, dispatch, navigate, id]);
 
   if (!currentQuiz || !attemptId) {
     return (
@@ -71,16 +133,11 @@ const QuizQuestion = () => {
     setShowFeedback(true);
   };
 
-  const handleNextQuestion = () => {
-    const nextIndex = questionIndex + 1;
-    if (nextIndex < currentQuiz.questions.length) {
-      navigate(`/quiz/${id}/${nextIndex}`);
-    } else {
-      navigate(`/quiz/${id}/leaderboard`);
-    }
-  };
-
   const progress = ((questionIndex + 1) / currentQuiz.questions.length) * 100;
+
+  // Timer: per-question timer takes priority over total quiz timer
+  const timerSeconds = currentQuiz.time_per_question_seconds || null;
+  const showTotalTimer = totalTimerSeconds !== null && !timerSeconds;
 
   return (
     <div className='quiz-question-container'>
@@ -99,6 +156,22 @@ const QuizQuestion = () => {
                 {questionIndex + 1} of {currentQuiz.questions.length}
               </span>
             </div>
+            {timerSeconds && !showFeedback && (
+              <QuizTimer
+                key={questionIndex}
+                totalSeconds={timerSeconds}
+                onTimeUp={handleTimeUp}
+                paused={showFeedback}
+              />
+            )}
+            {showTotalTimer && (
+              <QuizTimer
+                key="total-timer"
+                totalSeconds={totalTimerSeconds}
+                onTimeUp={handleTotalTimeUp}
+                paused={false}
+              />
+            )}
           </div>
 
           <div className='question-content'>
@@ -139,6 +212,15 @@ const QuizQuestion = () => {
                   {isCorrect
                     ? 'Correct!'
                     : `Incorrect. The correct answer is: ${question.answer}`}
+                </div>
+              </div>
+            )}
+
+            {showFeedback && question.explanation && (
+              <div className='explanation-box'>
+                <div className='explanation-icon'>💡</div>
+                <div className='explanation-text'>
+                  <strong>Explanation:</strong> {question.explanation}
                 </div>
               </div>
             )}

@@ -21,6 +21,57 @@
 
 .quiz-header {
   margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.quiz-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.edit-action-btn,
+.dup-action-btn,
+.delete-action-btn {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+.edit-action-btn:hover { background: #eef2ff; border-color: #a5b4fc; }
+.dup-action-btn:hover { background: #f0fdf4; border-color: #86efac; }
+.delete-action-btn { color: #ef4444; border-color: #fca5a5; }
+.delete-action-btn:hover { background: #fef2f2; }
+
+.difficulty-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.leaderboard-link-btn {
+  padding: 0.75rem 2rem;
+  border: 2px solid #667eea;
+  border-radius: 12px;
+  background: white;
+  color: #667eea;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.leaderboard-link-btn:hover {
+  background: #eef2ff;
 }
 
 .back-btn {
@@ -160,6 +211,10 @@
 
 .quiz-actions {
   text-align: center;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .start-btn {

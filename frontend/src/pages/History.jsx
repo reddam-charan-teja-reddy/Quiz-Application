@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useQuiz } from '../contexts/QuizContext';
 import { apiFetch } from '../lib/api';
 import Sidebar from '../components/Sidebar';
-import QuizCard from '../components/QuizCard';
 import './History.css';
 
 const History = () => {
   const { user } = useAuth();
-  const { quizzes } = useQuiz();
-  const [history, setHistory] = useState([]);
+  const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -24,23 +21,19 @@ const History = () => {
     setError('');
 
     try {
-      const response = await apiFetch('/api/history');
+      const response = await apiFetch('/api/v1/attempts');
 
       if (!response.ok) {
         throw new Error('Failed to fetch history');
       }
 
       const data = await response.json();
-      setHistory(data.history || []);
+      setAttempts(data.attempts || []);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
-
-  const getQuizById = (quizId) => {
-    return quizzes.find((quiz) => quiz.id === quizId);
   };
 
   const getScoreColor = (score) => {
@@ -91,7 +84,7 @@ const History = () => {
           <p>Review your past quiz attempts and track your progress</p>
         </div>
 
-        {history.length === 0 ? (
+        {attempts.length === 0 ? (
           <div className='empty-history'>
             <div className='empty-icon'>📚</div>
             <h3>No Quiz History</h3>
@@ -102,42 +95,31 @@ const History = () => {
           </div>
         ) : (
           <div className='history-grid'>
-            {history.map((attempt, index) => {
-              const quiz = getQuizById(attempt.quiz_id);
-
-              if (!quiz) {
-                return (
-                  <div key={index} className='history-card missing-quiz'>
-                    <h3>Quiz Not Found</h3>
-                    <p>Quiz ID: {attempt.quiz_id}</p>
-                    <div
-                      className='attempt-score'
-                      style={{ color: getScoreColor(attempt.score) }}>
-                      {attempt.score}%
-                    </div>
-                  </div>
-                );
-              }
+            {attempts.map((attempt) => {
+              const wrongCount = attempt.total - attempt.correct_count;
 
               return (
-                <div key={index} className='history-item'>
-                  <QuizCard
-                    quiz={quiz}
-                    showScore={true}
-                    score={attempt.score}
-                  />
+                <div key={attempt.attempt_id} className='history-item'>
+                  <div className='history-card'>
+                    <h3>{attempt.quiz_title || 'Untitled Quiz'}</h3>
+                    {attempt.created_at && (
+                      <p className='attempt-date'>
+                        {new Date(attempt.created_at).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
                   <div className='attempt-details'>
                     <div className='attempt-stats'>
                       <div className='stat-item'>
                         <span className='stat-label'>Correct:</span>
                         <span className='stat-value correct'>
-                          {attempt.correct.length}
+                          {attempt.correct_count}
                         </span>
                       </div>
                       <div className='stat-item'>
                         <span className='stat-label'>Wrong:</span>
                         <span className='stat-value wrong'>
-                          {attempt.wrong.length}
+                          {wrongCount}
                         </span>
                       </div>
                       <div className='stat-item'>
@@ -163,19 +145,19 @@ const History = () => {
           </div>
         )}
 
-        {history.length > 0 && (
+        {attempts.length > 0 && (
           <div className='history-summary'>
             <h3>Overall Statistics</h3>
             <div className='summary-stats'>
               <div className='summary-item'>
-                <div className='summary-number'>{history.length}</div>
+                <div className='summary-number'>{attempts.length}</div>
                 <div className='summary-label'>Quizzes Taken</div>
               </div>
               <div className='summary-item'>
                 <div className='summary-number'>
                   {Math.round(
-                    history.reduce((acc, attempt) => acc + attempt.score, 0) /
-                      history.length
+                    attempts.reduce((acc, a) => acc + a.score, 0) /
+                      attempts.length
                   )}
                   %
                 </div>
@@ -183,7 +165,7 @@ const History = () => {
               </div>
               <div className='summary-item'>
                 <div className='summary-number'>
-                  {Math.max(...history.map((attempt) => attempt.score))}%
+                  {Math.max(...attempts.map((a) => a.score))}%
                 </div>
                 <div className='summary-label'>Best Score</div>
               </div>

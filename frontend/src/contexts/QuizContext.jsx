@@ -24,7 +24,7 @@ export const QuizProvider = ({ children }) => {
 
     setLoading(true);
     try {
-      const response = await apiFetch('/api/quizzes');
+      const response = await apiFetch('/api/v1/quizzes');
       if (!response.ok) {
         throw new Error('Failed to fetch quizzes');
       }
@@ -42,7 +42,7 @@ export const QuizProvider = ({ children }) => {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      const response = await apiFetch('/api/quizzes', {
+      const response = await apiFetch('/api/v1/quizzes', {
         method: 'POST',
         body: JSON.stringify(quizData),
       });
@@ -61,7 +61,7 @@ export const QuizProvider = ({ children }) => {
 
   const generateQuiz = async (prompt) => {
     try {
-      const response = await apiFetch('/api/generate', {
+      const response = await apiFetch('/api/v1/generate', {
         method: 'POST',
         body: JSON.stringify({ prompt }),
       });
@@ -77,16 +77,36 @@ export const QuizProvider = ({ children }) => {
     }
   };
 
-  const startQuizAttempt = (quiz) => {
+  const startQuizAttempt = async (quiz) => {
     setCurrentQuiz(quiz);
-    setCurrentQuizAttempt({
-      quiz_id: quiz.id,
-      answers: {},
-      correct: [],
-      wrong: [],
-      startTime: new Date(),
-      currentQuestionIndex: 0,
-    });
+
+    // Start server-side attempt
+    try {
+      const response = await apiFetch(`/api/v1/attempts/start/${quiz.id}`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start attempt');
+      }
+
+      const data = await response.json();
+
+      setCurrentQuizAttempt({
+        attempt_id: data.attempt_id,
+        quiz_id: quiz.id,
+        answers: [],
+        answersMap: {},
+        correct: [],
+        wrong: [],
+        startTime: new Date(),
+        currentQuestionIndex: 0,
+      });
+
+      return data;
+    } catch (error) {
+      throw new Error('Failed to start quiz attempt: ' + error.message);
+    }
   };
 
   const submitAnswer = (questionId, answer) => {
@@ -97,8 +117,12 @@ export const QuizProvider = ({ children }) => {
 
     setCurrentQuizAttempt((prev) => ({
       ...prev,
-      answers: {
+      answers: [
         ...prev.answers,
+        { question_id: questionId, selected_answer: answer },
+      ],
+      answersMap: {
+        ...prev.answersMap,
         [questionId]: answer,
       },
       correct: isCorrect ? [...prev.correct, question] : prev.correct,
@@ -111,33 +135,39 @@ export const QuizProvider = ({ children }) => {
   const finishQuizAttempt = async () => {
     if (!currentQuizAttempt || !user) return;
 
-    const total = currentQuiz.questions.length;
-    const correct = currentQuizAttempt.correct.length;
-    const score = Math.round((correct / total) * 100);
-
     try {
-      await apiFetch('/api/history', {
-        method: 'POST',
-        body: JSON.stringify({
-          quiz_id: currentQuizAttempt.quiz_id,
-          correct: currentQuizAttempt.correct,
-          wrong: currentQuizAttempt.wrong,
-          total,
-          score,
-        }),
-      });
+      // Submit answers to server for scoring
+      const response = await apiFetch(
+        `/api/v1/attempts/${currentQuizAttempt.attempt_id}/finish`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            answers: currentQuizAttempt.answers,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to finish attempt');
+      }
+
+      const serverResult = await response.json();
 
       const result = {
         ...currentQuizAttempt,
-        total,
-        score,
+        attempt_id: serverResult.attempt_id,
+        total: serverResult.total,
+        score: serverResult.score,
+        correct_count: serverResult.correct_count,
+        wrong_count: serverResult.wrong_count,
+        details: serverResult.details,
         endTime: new Date(),
       };
 
       setCurrentQuizAttempt(null);
       return result;
     } catch (error) {
-      throw new Error('Failed to update history: ' + error.message);
+      throw new Error('Failed to finish attempt: ' + error.message);
     }
   };
 

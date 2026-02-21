@@ -33,7 +33,7 @@ const EditQuiz = () => {
 
       console.log('Fetching quiz data for id:', id);
 
-      const response = await apiFetch(`/api/quizzes/${id}`);
+      const response = await apiFetch(`/api/v1/quizzes/${id}`);
 
       console.log('Response status:', response.status);
 
@@ -151,14 +151,13 @@ const EditQuiz = () => {
         }
       }
 
-      const response = await apiFetch(`/api/quizzes/${id}`, {
+      const response = await apiFetch(`/api/v1/quizzes/${id}`, {
         method: 'PUT',
         body: JSON.stringify({
-          quiz: {
-            ...quiz,
-            author: user.username,
-            num_questions: quiz.questions.length,
-          },
+          title: quiz.title,
+          description: quiz.description,
+          categories: quiz.categories,
+          questions: quiz.questions,
         }),
       });
 

@@ -1,3 +1,5 @@
+"""Authentication utilities — password hashing, JWT creation/validation."""
+
 from datetime import datetime, timedelta, timezone
 
 from bson import ObjectId
@@ -7,10 +9,9 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from config import settings
-from db import db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 def hash_password(password: str) -> str:
@@ -39,6 +40,9 @@ def create_refresh_token(data: dict) -> str:
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     """FastAPI dependency — extracts and validates the JWT access token."""
+    # Import db here to avoid circular import and to get the lifespan-initialized instance
+    from db import db
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -56,7 +60,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
         raise credentials_exception
 
     try:
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        user = await db.users.find_one({"_id": ObjectId(user_id), "is_deleted": {"$ne": True}})
     except Exception:
         raise credentials_exception
 

@@ -35,7 +35,7 @@ export async function apiFetch(path, options = {}) {
   });
 
   // On 401, try refreshing the token (skip for auth routes to avoid loops)
-  if (response.status === 401 && !path.includes('/api/auth/')) {
+  if (response.status === 401 && !path.includes('/api/v1/auth/')) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       headers['Authorization'] = `Bearer ${accessToken}`;
@@ -54,7 +54,7 @@ export async function apiFetch(path, options = {}) {
 
 async function refreshAccessToken() {
   try {
-    const response = await fetch(`${API_URL}/api/auth/refresh`, {
+    const response = await fetch(`${API_URL}/api/v1/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
     });

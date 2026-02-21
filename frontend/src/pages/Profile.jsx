@@ -19,10 +19,8 @@ const Profile = () => {
   }, [user]);
 
   useEffect(() => {
-    // Show success message from navigation state
     if (location.state?.message) {
       setSuccessMessage(location.state.message);
-      // Clear the message from history state
       navigate(location.pathname, { replace: true, state: {} });
       setTimeout(() => setSuccessMessage(''), 5000);
     }
@@ -35,7 +33,7 @@ const Profile = () => {
     setError('');
 
     try {
-      const response = await apiFetch('/api/profile');
+      const response = await apiFetch('/api/v1/profile');
 
       if (!response.ok) {
         throw new Error('Failed to fetch profile');
@@ -112,23 +110,12 @@ const Profile = () => {
     );
   }
 
-  const averageScore =
-    profileData.history.length > 0
-      ? Math.round(
-          profileData.history.reduce((acc, attempt) => acc + attempt.score, 0) /
-            profileData.history.length
-        )
-      : 0;
-
-  const totalQuizzesTaken = profileData.history.length;
-  const totalQuestionsAnswered = profileData.history.reduce(
-    (acc, attempt) => acc + attempt.total,
-    0
-  );
-  const totalCorrectAnswers = profileData.history.reduce(
-    (acc, attempt) => acc + attempt.correct.length,
-    0
-  );
+  const averageScore = Math.round(profileData.average_score ?? 0);
+  const totalQuizzesTaken = profileData.total_attempts ?? 0;
+  const totalQuizzesCreated = profileData.created_quizzes?.length ?? 0;
+  const memberSince = profileData.created_at
+    ? new Date(profileData.created_at).toLocaleDateString()
+    : 'N/A';
 
   return (
     <div className='profile-container'>
@@ -155,6 +142,7 @@ const Profile = () => {
           <div className='profile-info'>
             <h1>{user.username}</h1>
             <p className='user-status'>{user.status}</p>
+            <p className='member-since'>Member since {memberSince}</p>
           </div>
         </div>
 
@@ -162,7 +150,11 @@ const Profile = () => {
           <div className='stats-grid'>
             <div className='stat-card'>
               <div className='stat-icon'>🎯</div>
-              <div className='stat-number'>{averageScore}%</div>
+              <div
+                className='stat-number'
+                style={{ color: totalQuizzesTaken > 0 ? getScoreColor(averageScore) : undefined }}>
+                {averageScore}%
+              </div>
               <div className='stat-label'>Average Score</div>
             </div>
 
@@ -173,15 +165,9 @@ const Profile = () => {
             </div>
 
             <div className='stat-card'>
-              <div className='stat-icon'>✅</div>
-              <div className='stat-number'>{totalCorrectAnswers}</div>
-              <div className='stat-label'>Correct Answers</div>
-            </div>
-
-            <div className='stat-card'>
-              <div className='stat-icon'>❓</div>
-              <div className='stat-number'>{totalQuestionsAnswered}</div>
-              <div className='stat-label'>Total Questions</div>
+              <div className='stat-icon'>📝</div>
+              <div className='stat-number'>{totalQuizzesCreated}</div>
+              <div className='stat-label'>Quizzes Created</div>
             </div>
           </div>
         </div>
@@ -189,7 +175,7 @@ const Profile = () => {
         <div className='profile-sections'>
           <div className='section'>
             <h2>Created Quizzes</h2>
-            {profileData.created_quizzes.length === 0 ? (
+            {totalQuizzesCreated === 0 ? (
               <div className='empty-section'>
                 <div className='empty-icon'>📝</div>
                 <p>You haven't created any quizzes yet.</p>
@@ -201,7 +187,7 @@ const Profile = () => {
                     <div className='quiz-icon'>📋</div>
                     <div className='quiz-details'>
                       <h3>{quiz.title}</h3>
-                      <p>Quiz ID: {quiz.id}</p>
+                      <p>{quiz.description || `${quiz.num_questions} questions`}</p>
                     </div>
                     <div className='quiz-actions'>
                       <button
@@ -221,89 +207,37 @@ const Profile = () => {
             )}
           </div>
 
-          <div className='section'>
-            <h2>Recent Quiz History</h2>
-            {profileData.history.length === 0 ? (
-              <div className='empty-section'>
-                <div className='empty-icon'>📊</div>
-                <p>No quiz attempts yet.</p>
-              </div>
-            ) : (
-              <div className='recent-history'>
-                {profileData.history
-                  .slice(-5)
-                  .reverse()
-                  .map((attempt, index) => (
-                    <div key={index} className='history-item'>
-                      <div className='history-icon'>🎯</div>
-                      <div className='history-details'>
-                        <div className='history-text'>
-                          <span className='quiz-id'>
-                            Quiz: {attempt.quiz_id}
-                          </span>
-                          <span className='attempt-info'>
-                            {attempt.correct.length}/{attempt.total} correct
-                          </span>
-                        </div>
-                        <div
-                          className='history-score'
-                          style={{ color: getScoreColor(attempt.score) }}>
-                          {attempt.score}%
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                {profileData.history.length > 5 && (
-                  <div className='view-all'>
-                    <p>
-                      View all {profileData.history.length} attempts in History
-                    </p>
+          {totalQuizzesTaken > 0 && (
+            <div className='section'>
+              <h2>Quiz Performance</h2>
+              <div className='performance-summary'>
+                <div className='performance-grid'>
+                  <div className='performance-item'>
+                    <div className='performance-label'>Total Attempts</div>
+                    <div className='performance-value'>{totalQuizzesTaken}</div>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
 
-        {profileData.history.length > 0 && (
-          <div className='performance-summary'>
-            <h2>Performance Summary</h2>
-            <div className='performance-grid'>
-              <div className='performance-item'>
-                <div className='performance-label'>Best Score</div>
-                <div
-                  className='performance-value'
-                  style={{
-                    color: getScoreColor(
-                      Math.max(...profileData.history.map((h) => h.score))
-                    ),
-                  }}>
-                  {Math.max(...profileData.history.map((h) => h.score))}%
+                  <div className='performance-item'>
+                    <div className='performance-label'>Average Score</div>
+                    <div
+                      className='performance-value'
+                      style={{ color: getScoreColor(averageScore) }}>
+                      {averageScore}%
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className='performance-item'>
-                <div className='performance-label'>Total Correct</div>
-                <div className='performance-value correct'>
-                  {totalCorrectAnswers}
-                </div>
-              </div>
-
-              <div className='performance-item'>
-                <div className='performance-label'>Accuracy Rate</div>
-                <div className='performance-value'>
-                  {totalQuestionsAnswered > 0
-                    ? Math.round(
-                        (totalCorrectAnswers / totalQuestionsAnswered) * 100
-                      )
-                    : 0}
-                  %
+                <div className='view-all'>
+                  <button
+                    onClick={() => navigate('/history')}
+                    className='view-history-btn'>
+                    View Full History
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

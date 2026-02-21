@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
 
     const restoreSession = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/auth/refresh`, {
+        const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
           method: 'POST',
           credentials: 'include',
         });
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
   }, [clearAuth]);
 
   const login = async (username, password) => {
-    const res = await fetch(`${API_URL}/api/auth/login`, {
+    const res = await fetch(`${API_URL}/api/v1/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (username, password) => {
-    const res = await fetch(`${API_URL}/api/auth/register`, {
+    const res = await fetch(`${API_URL}/api/v1/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await fetch(`${API_URL}/api/auth/logout`, {
+      await fetch(`${API_URL}/api/v1/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });

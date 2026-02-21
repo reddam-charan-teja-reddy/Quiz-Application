@@ -29,9 +29,12 @@ dist-ssr
 venv
 pycache
 __pycache__
-
+migrations
 # plans
 
 docs
 colorpallete.css
 postman_responses.json
+
+# github workflow will be removed after v 0.5 release
+.github/workflows

@@ -1,11 +1,29 @@
-import os
+"""
+Gemini AI client — lazy-initialized to avoid crashing at import time.
+"""
+
+import logging
+from functools import lru_cache
+
 import google.generativeai as genai
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY not found in environment variables.")
+from config import settings
 
-genai.configure(api_key=GEMINI_API_KEY)
+logger = logging.getLogger(__name__)
 
-# Initialize the model for use in other files
-model = genai.GenerativeModel('gemini-2.5-flash')
+
+@lru_cache(maxsize=1)
+def _get_model() -> genai.GenerativeModel:
+    """Return a configured Gemini model, initializing on first call."""
+    if not settings.GEMINI_API_KEY:
+        raise RuntimeError(
+            "GEMINI_API_KEY is not set. Add it to your .env file."
+        )
+    genai.configure(api_key=settings.GEMINI_API_KEY)
+    logger.info("Gemini client initialized (model=gemini-2.5-flash)")
+    return genai.GenerativeModel("gemini-2.5-flash")
+
+
+def get_model() -> genai.GenerativeModel:
+    """Public accessor for the Gemini model (lazy singleton)."""
+    return _get_model()

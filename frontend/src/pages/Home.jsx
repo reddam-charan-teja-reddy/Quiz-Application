@@ -1,38 +1,36 @@
-import { useState, useEffect } from 'react';
-import { useQuiz } from '../contexts/QuizContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useState, useMemo } from 'react';
+import { useGetQuizzesQuery } from '../store/api/apiSlice';
+import { useAppSelector } from '../store/hooks';
 import Sidebar from '../components/Sidebar';
 import QuizCard from '../components/QuizCard';
 import './Home.css';
 
 const Home = () => {
-  const { user } = useAuth();
-  const { quizzes, fetchQuizzes, loading } = useQuiz();
+  const { user } = useAppSelector((state) => state.auth);
+  const { data: quizzes = [], isLoading } = useGetQuizzesQuery(undefined, {
+    skip: !user,
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
-  useEffect(() => {
-    if (user) {
-      fetchQuizzes();
-    }
-  }, [user, fetchQuizzes]);
-
   // Get unique categories
-  const categories = [
-    ...new Set(quizzes.flatMap((quiz) => quiz.categories || [])),
-  ];
+  const categories = useMemo(
+    () => [...new Set(quizzes.flatMap((quiz) => quiz.categories || []))],
+    [quizzes]
+  );
 
   // Filter quizzes based on search and category
-  const filteredQuizzes = quizzes.filter((quiz) => {
-    const matchesSearch =
-      quiz.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quiz.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      !selectedCategory ||
-      (quiz.categories && quiz.categories.includes(selectedCategory));
-
-    return matchesSearch && matchesCategory;
-  });
+  const filteredQuizzes = useMemo(() => {
+    return quizzes.filter((quiz) => {
+      const matchesSearch =
+        quiz.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        quiz.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        !selectedCategory ||
+        (quiz.categories && quiz.categories.includes(selectedCategory));
+      return matchesSearch && matchesCategory;
+    });
+  }, [quizzes, searchTerm, selectedCategory]);
 
   return (
     <div className='home-container'>
@@ -71,7 +69,7 @@ const Home = () => {
         </div>
 
         <div className='quizzes-grid'>
-          {loading ? (
+          {isLoading ? (
             <div className='loading-state'>
               <div className='spinner'></div>
               <p>Loading quizzes...</p>

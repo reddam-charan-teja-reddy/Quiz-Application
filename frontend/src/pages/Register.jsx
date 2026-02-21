@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAppDispatch } from '../store/hooks';
+import { register, clearAuthError } from '../store/slices/authSlice';
+import { sanitizeText } from '../lib/sanitize';
 import './Login.css';
 
 const Register = () => {
@@ -9,7 +11,7 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { register } = useAuth();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -34,12 +36,13 @@ const Register = () => {
 
     setLoading(true);
     setError('');
+    dispatch(clearAuthError());
 
     try {
-      await register(username.trim(), password);
+      await dispatch(register({ username: username.trim(), password })).unwrap();
       navigate('/home');
     } catch (err) {
-      setError(err.message);
+      setError(typeof err === 'string' ? err : err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -62,7 +65,7 @@ const Register = () => {
               id='username'
               type='text'
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setUsername(sanitizeText(e.target.value, 50))}
               placeholder='Choose a username (min 3 characters)'
               disabled={loading}
             />

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuiz } from '../contexts/QuizContext';
+import { useCreateQuizMutation, useGenerateQuizMutation } from '../store/api/apiSlice';
+import { sanitizeText, sanitizeTextArea } from '../lib/sanitize';
 import Sidebar from '../components/Sidebar';
 import './CreateQuiz.css';
 
 const CreateQuiz = () => {
   const navigate = useNavigate();
-  const { createQuiz, generateQuiz } = useQuiz();
+  const [createQuiz] = useCreateQuizMutation();
+  const [generateQuizApi] = useGenerateQuizMutation();
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -15,11 +17,10 @@ const CreateQuiz = () => {
   const [quizData, setQuizData] = useState({
     title: '',
     description: '',
-    author: '',
     categories: [''],
     questions: [
       {
-        id: '1',
+        id: crypto.randomUUID(),
         question: '',
         options: ['', '', '', ''],
         answer: '',
@@ -30,12 +31,15 @@ const CreateQuiz = () => {
   const [aiPrompt, setAiPrompt] = useState('');
 
   const handleInputChange = (field, value) => {
-    setQuizData((prev) => ({ ...prev, [field]: value }));
+    const sanitized = field === 'description'
+      ? sanitizeTextArea(value)
+      : sanitizeText(value, 200);
+    setQuizData((prev) => ({ ...prev, [field]: sanitized }));
   };
 
   const handleCategoryChange = (index, value) => {
     const newCategories = [...quizData.categories];
-    newCategories[index] = value;
+    newCategories[index] = sanitizeText(value, 100);
     setQuizData((prev) => ({ ...prev, categories: newCategories }));
   };
 
@@ -54,18 +58,22 @@ const CreateQuiz = () => {
   };
 
   const handleQuestionChange = (questionIndex, field, value) => {
+    const sanitized = field === 'question'
+      ? sanitizeTextArea(value, 1000)
+      : sanitizeText(value);
     const newQuestions = [...quizData.questions];
     newQuestions[questionIndex] = {
       ...newQuestions[questionIndex],
-      [field]: value,
+      [field]: sanitized,
     };
     setQuizData((prev) => ({ ...prev, questions: newQuestions }));
   };
 
   const handleOptionChange = (questionIndex, optionIndex, value) => {
+    const sanitized = sanitizeText(value, 500);
     const newQuestions = [...quizData.questions];
     const newOptions = [...newQuestions[questionIndex].options];
-    newOptions[optionIndex] = value;
+    newOptions[optionIndex] = sanitized;
     newQuestions[questionIndex] = {
       ...newQuestions[questionIndex],
       options: newOptions,
@@ -75,7 +83,7 @@ const CreateQuiz = () => {
 
   const addQuestion = () => {
     const newQuestion = {
-      id: (quizData.questions.length + 1).toString(),
+      id: crypto.randomUUID(),
       question: '',
       options: ['', '', '', ''],
       answer: '',
@@ -103,12 +111,12 @@ const CreateQuiz = () => {
     setError('');
 
     try {
-      const generatedQuiz = await generateQuiz(aiPrompt);
+      const generatedQuiz = await generateQuizApi(aiPrompt).unwrap();
       setQuizData({
         ...generatedQuiz,
-        questions: generatedQuiz.questions.map((q, index) => ({
+        questions: generatedQuiz.questions.map((q) => ({
           ...q,
-          id: (index + 1).toString(),
+          id: crypto.randomUUID(),
         })),
       });
       setAiPrompt('');
@@ -121,16 +129,20 @@ const CreateQuiz = () => {
 
   const validateQuiz = () => {
     if (!quizData.title.trim()) return 'Title is required';
+    if (quizData.title.trim().length > 200) return 'Title must be under 200 characters';
     if (!quizData.description.trim()) return 'Description is required';
-    if (!quizData.author.trim()) return 'Author is required';
+    if (quizData.description.trim().length > 2000) return 'Description must be under 2000 characters';
     if (quizData.categories.every((cat) => !cat.trim()))
       return 'At least one category is required';
 
     for (let i = 0; i < quizData.questions.length; i++) {
       const question = quizData.questions[i];
       if (!question.question.trim()) return `Question ${i + 1} is required`;
+      if (question.question.trim().length > 1000) return `Question ${i + 1} is too long (max 1000 chars)`;
       if (question.options.some((opt) => !opt.trim()))
         return `All options for Question ${i + 1} are required`;
+      if (question.options.some((opt) => opt.trim().length > 500))
+        return `Options for Question ${i + 1} are too long (max 500 chars each)`;
       if (!question.answer.trim())
         return `Answer for Question ${i + 1} is required`;
       if (!question.options.includes(question.answer))
@@ -155,11 +167,10 @@ const CreateQuiz = () => {
     try {
       const quizToSubmit = {
         ...quizData,
-        num_questions: quizData.questions.length,
         categories: quizData.categories.filter((cat) => cat.trim()),
       };
 
-      await createQuiz(quizToSubmit);
+      await createQuiz(quizToSubmit).unwrap();
       navigate('/home');
     } catch (err) {
       setError('Failed to create quiz: ' + err.message);
@@ -243,18 +254,6 @@ const CreateQuiz = () => {
                   }
                   placeholder='Describe your quiz'
                   rows='3'
-                  required
-                />
-              </div>
-
-              <div className='form-group'>
-                <label htmlFor='author'>Author *</label>
-                <input
-                  id='author'
-                  type='text'
-                  value={quizData.author}
-                  onChange={(e) => handleInputChange('author', e.target.value)}
-                  placeholder='Your name'
                   required
                 />
               </div>

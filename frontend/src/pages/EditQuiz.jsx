@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { apiFetch } from '../lib/api';
+import { useAppSelector } from '../store/hooks';
+import { useGetQuizQuery, useUpdateQuizMutation } from '../store/api/apiSlice';
+import { sanitizeText, sanitizeTextArea } from '../lib/sanitize';
 import Sidebar from '../components/Sidebar';
 import './EditQuiz.css';
 
 const EditQuiz = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAppSelector((state) => state.auth);
+  const { data: fetchedQuiz, isLoading, error: fetchError } = useGetQuizQuery(id, { skip: !user || !id });
+  const [updateQuizApi] = useUpdateQuizMutation();
 
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [categoriesText, setCategoriesText] = useState('');
   const [quiz, setQuiz] = useState({
     title: '',
     description: '',
@@ -20,56 +23,34 @@ const EditQuiz = () => {
     questions: [],
   });
 
+  // Seed local form state when fetched quiz arrives
   useEffect(() => {
-    fetchQuizData();
-  }, [id, user]);
-
-  const fetchQuizData = async () => {
-    if (!user || !id) return;
-
-    try {
-      setLoading(true);
-      setError('');
-
-      console.log('Fetching quiz data for id:', id);
-
-      const response = await apiFetch(`/api/v1/quizzes/${id}`);
-
-      console.log('Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log('Error response:', errorText);
-
-        if (response.status === 403) {
-          throw new Error('You can only edit quizzes you created');
-        }
-        if (response.status === 400) {
-          throw new Error('Invalid quiz ID format');
-        }
-        if (response.status === 404) {
-          throw new Error('Quiz not found');
-        }
-        throw new Error(`Failed to fetch quiz data: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Quiz data received:', data);
-      setQuiz(data.quiz);
-    } catch (err) {
-      console.error('Error fetching quiz:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    if (fetchedQuiz) {
+      setQuiz(fetchedQuiz);
+      setCategoriesText((fetchedQuiz.categories || []).join(', '));
     }
-  };
+  }, [fetchedQuiz]);
+
+  // Map RTK Query fetch error to local error string
+  useEffect(() => {
+    if (fetchError) {
+      const status = fetchError.status;
+      if (status === 403) setError('You can only edit quizzes you created');
+      else if (status === 400) setError('Invalid quiz ID format');
+      else if (status === 404) setError('Quiz not found');
+      else setError(`Failed to fetch quiz data: ${status}`);
+    }
+  }, [fetchError]);
 
   const handleInputChange = (field, value) => {
-    setQuiz((prev) => ({ ...prev, [field]: value }));
+    const sanitized = field === 'description'
+      ? sanitizeTextArea(value)
+      : sanitizeText(value, 200);
+    setQuiz((prev) => ({ ...prev, [field]: sanitized }));
   };
 
-  const handleCategoriesChange = (value) => {
-    const categories = value
+  const handleCategoriesBlur = () => {
+    const categories = categoriesText
       .split(',')
       .map((cat) => cat.trim())
       .filter((cat) => cat);
@@ -77,15 +58,19 @@ const EditQuiz = () => {
   };
 
   const handleQuestionChange = (questionIndex, field, value) => {
+    const sanitized = field === 'question'
+      ? sanitizeTextArea(value, 1000)
+      : sanitizeText(value);
     setQuiz((prev) => ({
       ...prev,
       questions: prev.questions.map((q, index) =>
-        index === questionIndex ? { ...q, [field]: value } : q
+        index === questionIndex ? { ...q, [field]: sanitized } : q
       ),
     }));
   };
 
   const handleOptionChange = (questionIndex, optionIndex, value) => {
+    const sanitized = sanitizeText(value, 500);
     setQuiz((prev) => ({
       ...prev,
       questions: prev.questions.map((q, qIndex) =>
@@ -93,7 +78,7 @@ const EditQuiz = () => {
           ? {
               ...q,
               options: q.options.map((opt, oIndex) =>
-                oIndex === optionIndex ? value : opt
+                oIndex === optionIndex ? sanitized : opt
               ),
             }
           : q
@@ -151,36 +136,25 @@ const EditQuiz = () => {
         }
       }
 
-      const response = await apiFetch(`/api/v1/quizzes/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          title: quiz.title,
-          description: quiz.description,
-          categories: quiz.categories,
-          questions: quiz.questions,
-        }),
+      await updateQuizApi({
+        id,
+        title: quiz.title,
+        description: quiz.description,
+        categories: quiz.categories,
+        questions: quiz.questions,
+      }).unwrap();
+
+      navigate('/profile', {
+        state: { message: 'Quiz updated successfully!' },
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to save quiz changes');
-      }
-
-      const result = await response.json();
-      if (result.success) {
-        navigate('/profile', {
-          state: { message: 'Quiz updated successfully!' },
-        });
-      } else {
-        throw new Error(result.message || 'Failed to save changes');
-      }
     } catch (err) {
-      setError(err.message);
+      setError(err.data?.detail || err.message || 'Failed to save changes');
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className='edit-quiz-container'>
         <Sidebar />
@@ -268,8 +242,9 @@ const EditQuiz = () => {
               <input
                 type='text'
                 id='categories'
-                value={quiz.categories.join(', ')}
-                onChange={(e) => handleCategoriesChange(e.target.value)}
+                value={categoriesText}
+                onChange={(e) => setCategoriesText(e.target.value)}
+                onBlur={handleCategoriesBlur}
                 placeholder='Enter categories separated by commas...'
                 className='form-input'
               />

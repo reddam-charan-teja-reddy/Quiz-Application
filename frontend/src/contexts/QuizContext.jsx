@@ -32,7 +32,7 @@ export const QuizProvider = ({ children }) => {
       const data = await response.json();
       setQuizzes(data.quizzes || []);
     } catch (error) {
-      console.error('Error fetching quizzes:', error);
+      // Silently fail — UI shows empty state
     } finally {
       setLoading(false);
     }

@@ -1,22 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAppSelector } from '../store/hooks';
+import { useGetProfileQuery } from '../store/api/apiSlice';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { apiFetch } from '../lib/api';
 import Sidebar from '../components/Sidebar';
 import './Profile.css';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user } = useAppSelector((state) => state.auth);
   const location = useLocation();
   const navigate = useNavigate();
-  const [profileData, setProfileData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { data: profileData, isLoading, error: fetchError, refetch } = useGetProfileQuery();
   const [successMessage, setSuccessMessage] = useState('');
-
-  useEffect(() => {
-    fetchProfile();
-  }, [user]);
 
   useEffect(() => {
     if (location.state?.message) {
@@ -26,35 +20,13 @@ const Profile = () => {
     }
   }, [location.state, navigate]);
 
-  const fetchProfile = async () => {
-    if (!user) return;
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await apiFetch('/api/v1/profile');
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile');
-      }
-
-      const data = await response.json();
-      setProfileData(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getScoreColor = (score) => {
     if (score >= 80) return '#10b981';
     if (score >= 60) return '#f59e0b';
     return '#ef4444';
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className='profile-container'>
         <Sidebar />
@@ -68,7 +40,7 @@ const Profile = () => {
     );
   }
 
-  if (error) {
+  if (fetchError) {
     return (
       <div className='profile-container'>
         <Sidebar />
@@ -86,8 +58,8 @@ const Profile = () => {
           <div className='error-state'>
             <div className='error-icon'>⚠️</div>
             <h2>Error Loading Profile</h2>
-            <p>{error}</p>
-            <button onClick={fetchProfile} className='retry-btn'>
+            <p>{fetchError?.data?.detail || 'Failed to fetch profile'}</p>
+            <button onClick={refetch} className='retry-btn'>
               Try Again
             </button>
           </div>

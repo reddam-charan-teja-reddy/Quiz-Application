@@ -32,8 +32,8 @@ const QuizCard = ({ quiz, showScore = false, score = null }) => {
 
       {quiz.categories && quiz.categories.length > 0 && (
         <div className='quiz-categories'>
-          {quiz.categories.map((category, index) => (
-            <span key={index} className='category-tag'>
+          {quiz.categories.map((category) => (
+            <span key={category} className='category-tag'>
               {category}
             </span>
           ))}

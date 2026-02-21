@@ -1,40 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { apiFetch } from '../lib/api';
 import Sidebar from '../components/Sidebar';
+import { useGetHistoryQuery } from '../store/api/apiSlice';
 import './History.css';
 
 const History = () => {
-  const { user } = useAuth();
-  const [attempts, setAttempts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetchHistory();
-  }, [user]);
-
-  const fetchHistory = async () => {
-    if (!user) return;
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await apiFetch('/api/v1/attempts');
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch history');
-      }
-
-      const data = await response.json();
-      setAttempts(data.attempts || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: attempts = [], isLoading, error, refetch } = useGetHistoryQuery();
 
   const getScoreColor = (score) => {
     if (score >= 80) return '#10b981';
@@ -42,7 +11,7 @@ const History = () => {
     return '#ef4444';
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className='history-container'>
         <Sidebar />
@@ -64,8 +33,8 @@ const History = () => {
           <div className='error-state'>
             <div className='error-icon'>⚠️</div>
             <h2>Error Loading History</h2>
-            <p>{error}</p>
-            <button onClick={fetchHistory} className='retry-btn'>
+            <p>{error?.data?.detail || 'Failed to fetch history'}</p>
+            <button onClick={refetch} className='retry-btn'>
               Try Again
             </button>
           </div>

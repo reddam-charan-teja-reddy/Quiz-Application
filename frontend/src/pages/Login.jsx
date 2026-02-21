@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { login, clearAuthError } from '../store/slices/authSlice';
+import { sanitizeText } from '../lib/sanitize';
 import './Login.css';
 
 const Login = () => {
@@ -8,7 +10,8 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const dispatch = useAppDispatch();
+  const authError = useAppSelector((state) => state.auth.error);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -24,12 +27,13 @@ const Login = () => {
 
     setLoading(true);
     setError('');
+    dispatch(clearAuthError());
 
     try {
-      await login(username.trim(), password);
-      navigate('/home');
+      const result = await dispatch(login({ username: username.trim(), password })).unwrap();
+      if (result) navigate('/home');
     } catch (err) {
-      setError(err.message);
+      setError(typeof err === 'string' ? err : err.message || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -53,7 +57,7 @@ const Login = () => {
               id='username'
               type='text'
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setUsername(sanitizeText(e.target.value, 50))}
               placeholder='Enter your username'
               disabled={loading}
             />

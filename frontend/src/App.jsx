@@ -1,11 +1,14 @@
+import { useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { QuizProvider } from './contexts/QuizContext';
+import { useAppDispatch } from './store/hooks';
+import { restoreSession, forceLogout } from './store/slices/authSlice';
+import { setOnAuthFailure } from './lib/api';
+import ErrorBoundary from './components/ErrorBoundary';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
@@ -16,18 +19,26 @@ import History from './pages/History';
 import Profile from './pages/Profile';
 import CreateQuiz from './pages/CreateQuiz';
 import EditQuiz from './pages/EditQuiz';
+import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
+  const dispatch = useAppDispatch();
+
+  // Restore session on mount & wire up auth-failure callback
+  useEffect(() => {
+    setOnAuthFailure(() => dispatch(forceLogout()));
+    dispatch(restoreSession());
+  }, [dispatch]);
+
   return (
-    <Router>
-      <AuthProvider>
-        <QuizProvider>
-          <Routes>
-            <Route path='/login' element={<Login />} />
-            <Route path='/register' element={<Register />} />
-            <Route path='/' element={<Navigate to='/login' replace />} />
+    <ErrorBoundary>
+      <Router>
+        <Routes>
+          <Route path='/login' element={<Login />} />
+          <Route path='/register' element={<Register />} />
+          <Route path='/' element={<Navigate to='/login' replace />} />
             <Route
               path='/home'
               element={
@@ -92,10 +103,10 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path='*' element={<NotFound />} />
           </Routes>
-        </QuizProvider>
-      </AuthProvider>
-    </Router>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

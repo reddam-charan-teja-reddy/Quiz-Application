@@ -1,16 +1,32 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuiz } from '../contexts/QuizContext';
+import { useGetQuizQuery, useStartAttemptMutation } from '../store/api/apiSlice';
+import { useAppDispatch } from '../store/hooks';
+import { startAttempt } from '../store/slices/attemptSlice';
 import Sidebar from '../components/Sidebar';
 import './QuizDetail.css';
 
 const QuizDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { quizzes, startQuizAttempt } = useQuiz();
+  const dispatch = useAppDispatch();
+  const { data: quiz, isLoading, error } = useGetQuizQuery(id);
+  const [startAttemptApi] = useStartAttemptMutation();
 
-  const quiz = quizzes.find((q) => q.id === id);
+  if (isLoading) {
+    return (
+      <div className='quiz-detail-container'>
+        <Sidebar />
+        <div className='quiz-detail-content'>
+          <div className='loading-state'>
+            <div className='spinner'></div>
+            <p>Loading quiz...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  if (!quiz) {
+  if (error || !quiz) {
     return (
       <div className='quiz-detail-container'>
         <Sidebar />
@@ -27,9 +43,14 @@ const QuizDetail = () => {
     );
   }
 
-  const handleStartQuiz = () => {
-    startQuizAttempt(quiz);
-    navigate(`/quiz/${id}/0`);
+  const handleStartQuiz = async () => {
+    try {
+      const result = await startAttemptApi(quiz.id).unwrap();
+      dispatch(startAttempt({ quiz, attemptId: result.attempt_id }));
+      navigate(`/quiz/${id}/0`);
+    } catch {
+      // Error handled by RTK Query
+    }
   };
 
   return (
@@ -63,8 +84,8 @@ const QuizDetail = () => {
               <div className='categories'>
                 <h3>Categories</h3>
                 <div className='category-tags'>
-                  {quiz.categories.map((category, index) => (
-                    <span key={index} className='category-tag'>
+                  {quiz.categories.map((category) => (
+                    <span key={category} className='category-tag'>
                       {category}
                     </span>
                   ))}

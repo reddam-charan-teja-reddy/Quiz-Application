@@ -1,44 +1,61 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuiz } from '../contexts/QuizContext';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
+import {
+  useFinishAttemptMutation,
+  useStartAttemptMutation,
+} from '../store/api/apiSlice';
+import { startAttempt, clearAttempt } from '../store/slices/attemptSlice';
 import Sidebar from '../components/Sidebar';
 import './QuizLeaderboard.css';
 
 const QuizLeaderboard = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const {
-    currentQuiz,
-    currentQuizAttempt,
-    finishQuizAttempt,
-    startQuizAttempt,
-  } = useQuiz();
+  const dispatch = useAppDispatch();
+  const { currentQuiz, attemptId, answers, correct, wrong } = useAppSelector(
+    (state) => state.attempt
+  );
+
+  const [finishAttemptApi] = useFinishAttemptMutation();
+  const [startAttemptApi] = useStartAttemptMutation();
 
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(true);
+  const hasSubmitted = useRef(false);
 
   useEffect(() => {
+    // Guard against StrictMode double-invocation (#14)
+    if (hasSubmitted.current) return;
+
     const saveResults = async () => {
-      if (!currentQuiz || !currentQuizAttempt) {
-        navigate(`/quiz/${id}`);
+      if (!currentQuiz || !attemptId) {
+        navigate(`/quiz/${id}`, { replace: true });
         return;
       }
 
+      hasSubmitted.current = true;
+
       try {
-        const finalResults = await finishQuizAttempt();
-        setResults(finalResults);
-      } catch (error) {
-        console.error('Error saving quiz results:', error);
+        const res = await finishAttemptApi({ attemptId, answers }).unwrap();
+        setResults({
+          correct,
+          wrong,
+          total: currentQuiz.questions.length,
+          score: res.score ?? Math.round((correct.length / currentQuiz.questions.length) * 100),
+          answersMap: Object.fromEntries(answers.map((a) => [a.question_id, a.selected_answer])),
+        });
+      } catch {
         // Still show results even if save failed
         const total = currentQuiz.questions.length;
-        const correct = currentQuizAttempt.correct.length;
-        const score = Math.round((correct / total) * 100);
+        const score = Math.round((correct.length / total) * 100);
 
         setResults({
-          ...currentQuizAttempt,
+          correct,
+          wrong,
           total,
           score,
-          endTime: new Date(),
+          answersMap: Object.fromEntries(answers.map((a) => [a.question_id, a.selected_answer])),
         });
       } finally {
         setLoading(false);
@@ -46,11 +63,16 @@ const QuizLeaderboard = () => {
     };
 
     saveResults();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleRetakeQuiz = () => {
-    startQuizAttempt(currentQuiz);
-    navigate(`/quiz/${id}/0`);
+  const handleRetakeQuiz = async () => {
+    try {
+      const res = await startAttemptApi(currentQuiz.id).unwrap();
+      dispatch(startAttempt({ quiz: currentQuiz, attemptId: res.attempt_id }));
+      navigate(`/quiz/${id}/0`);
+    } catch {
+      navigate(`/quiz/${id}`);
+    }
   };
 
   const handleBackHome = () => {
@@ -193,7 +215,7 @@ const QuizLeaderboard = () => {
                       </div>
                       <div className='answer-text'>
                         <strong>Your Answer:</strong>{' '}
-                        {results.answers[question.id]}
+                        {results.answersMap[question.id]}
                       </div>
                       <div className='correct-answer-text'>
                         <strong>Correct Answer:</strong> {question.answer}

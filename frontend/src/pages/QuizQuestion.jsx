@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuiz } from '../contexts/QuizContext';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
+import { recordAnswer } from '../store/slices/attemptSlice';
 import Sidebar from '../components/Sidebar';
 import './QuizQuestion.css';
 
 const QuizQuestion = () => {
   const { id, q_id } = useParams();
   const navigate = useNavigate();
-  const { currentQuiz, currentQuizAttempt, submitAnswer } = useQuiz();
+  const dispatch = useAppDispatch();
+  const { currentQuiz, attemptId } = useAppSelector((state) => state.attempt);
 
   const [selectedAnswer, setSelectedAnswer] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
@@ -15,14 +17,28 @@ const QuizQuestion = () => {
 
   const questionIndex = parseInt(q_id);
 
+  // Redirect if no active attempt — done in useEffect, not during render (#15)
   useEffect(() => {
-    if (!currentQuiz || !currentQuizAttempt) {
-      navigate(`/quiz/${id}`);
-      return;
+    if (!currentQuiz || !attemptId) {
+      navigate(`/quiz/${id}`, { replace: true });
     }
-  }, [currentQuiz, currentQuizAttempt, id, navigate]);
+  }, [currentQuiz, attemptId, id, navigate]);
 
-  if (!currentQuiz || !currentQuizAttempt) {
+  // Redirect when question index overflows — also in useEffect
+  useEffect(() => {
+    if (currentQuiz && questionIndex >= currentQuiz.questions.length) {
+      navigate(`/quiz/${id}/leaderboard`, { replace: true });
+    }
+  }, [currentQuiz, questionIndex, id, navigate]);
+
+  // Reset answer state when navigating between questions
+  useEffect(() => {
+    setSelectedAnswer('');
+    setShowFeedback(false);
+    setIsCorrect(false);
+  }, [questionIndex]);
+
+  if (!currentQuiz || !attemptId) {
     return (
       <div className='quiz-question-container'>
         <Sidebar />
@@ -36,14 +52,21 @@ const QuizQuestion = () => {
   const question = currentQuiz.questions[questionIndex];
 
   if (!question) {
-    navigate(`/quiz/${id}/leaderboard`);
     return null;
   }
 
   const handleAnswerSubmit = () => {
     if (!selectedAnswer) return;
 
-    const correct = submitAnswer(question.id, selectedAnswer);
+    const correct = question.answer === selectedAnswer;
+    dispatch(
+      recordAnswer({
+        questionId: question.id,
+        selectedAnswer,
+        isCorrect: correct,
+        question,
+      })
+    );
     setIsCorrect(correct);
     setShowFeedback(true);
   };
@@ -52,10 +75,6 @@ const QuizQuestion = () => {
     const nextIndex = questionIndex + 1;
     if (nextIndex < currentQuiz.questions.length) {
       navigate(`/quiz/${id}/${nextIndex}`);
-      // Reset state for next question
-      setSelectedAnswer('');
-      setShowFeedback(false);
-      setIsCorrect(false);
     } else {
       navigate(`/quiz/${id}/leaderboard`);
     }

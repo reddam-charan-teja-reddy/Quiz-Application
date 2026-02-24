@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCreateQuizMutation, useGenerateQuizMutation, useImportQuizMutation } from '../store/api/apiSlice';
+import { useCreateQuizMutation, useGenerateQuizMutation } from '../store/api/apiSlice';
 import { sanitizeText, sanitizeTextArea } from '../lib/sanitize';
 import Sidebar from '../components/Sidebar';
 import Toast from '../components/Toast';
@@ -10,7 +10,6 @@ const CreateQuiz = () => {
   const navigate = useNavigate();
   const [createQuiz] = useCreateQuizMutation();
   const [generateQuizApi] = useGenerateQuizMutation();
-  const [importQuizApi] = useImportQuizMutation();
   const fileInputRef = useRef(null);
 
   const [isGenerating, setIsGenerating] = useState(false);

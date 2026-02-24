@@ -39,8 +39,8 @@ jobs:
           --health-retries 5
 
     env:
-      MONGO_URI: mongodb://localhost:27017
-      DB: quiz_e2e_test
+      E2E_MONGO_URI: mongodb://localhost:27017
+      E2E_DB: quiz_e2e_test
       JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-secret-key' }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'fake-key-for-e2e' }}
       CORS_ORIGINS: '["http://localhost:5173"]'
@@ -49,7 +49,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ── Backend setup ──
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
@@ -62,24 +61,11 @@ jobs:
         working-directory: backend
         run: uv sync
 
-      - name: Start backend server
-        working-directory: backend
-        run: uv run python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
-      - name: Wait for backend
-        run: |
-          for i in $(seq 1 30); do
-            if curl --silent --fail http://localhost:8000/health > /dev/null 2>&1; then
-              echo "Backend is ready"
-              exit 0
-            fi
-            echo "Waiting for backend... ($i/30)"
-            sleep 1
-          done
-          echo "Backend failed to start"
-          exit 1
-
-      # ── Frontend setup ──
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -89,37 +75,17 @@ jobs:
         working-directory: frontend
         run: bun install --frozen-lockfile
 
-      - name: Build frontend
-        working-directory: frontend
-        run: bun run build
-
-      - name: Start frontend preview server
-        working-directory: frontend
-        run: bun run preview --port 5173 --host &
-
-      - name: Wait for frontend
-        run: |
-          for i in $(seq 1 30); do
-            if curl --silent --fail http://localhost:5173 > /dev/null 2>&1; then
-              echo "Frontend is ready"
-              exit 0
-            fi
-            echo "Waiting for frontend... ($i/30)"
-            sleep 1
-          done
-          echo "Frontend failed to start"
-          exit 1
-
       # ── Playwright ──
       - name: Install Playwright browsers
         working-directory: frontend
-        run: bunx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
         working-directory: frontend
-        run: bunx playwright test
+        run: npx playwright test
         env:
           BASE_URL: http://localhost:5173
+          E2E_DELETE_SHARED_USER: "true"
 
       - name: Upload Playwright report
         if: always()

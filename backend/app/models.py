@@ -2,11 +2,11 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal
 
 from pydantic import BaseModel, Field
 
 # ── Enums ────────────────────────────────────────────
+
 
 class Difficulty(str, Enum):
     easy = "easy"
@@ -15,6 +15,7 @@ class Difficulty(str, Enum):
 
 
 # ── Auth ─────────────────────────────────────────────
+
 
 class RegisterRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=30, pattern=r"^[a-zA-Z0-9_-]+$")
@@ -39,6 +40,7 @@ class ChangePasswordRequest(BaseModel):
 
 # ── Quiz ─────────────────────────────────────────────
 
+
 class Question(BaseModel):
     id: str
     question: str
@@ -49,6 +51,7 @@ class Question(BaseModel):
 
 class QuizCreate(BaseModel):
     """Request body for creating a quiz."""
+
     title: str = Field(..., min_length=1, max_length=200)
     description: str = Field(default="")
     categories: list[str] = Field(default_factory=list)
@@ -61,6 +64,7 @@ class QuizCreate(BaseModel):
 
 class QuizUpdate(BaseModel):
     """Request body for editing a quiz."""
+
     title: str = Field(..., min_length=1, max_length=200)
     description: str = Field(default="")
     categories: list[str] = Field(default_factory=list)
@@ -73,6 +77,7 @@ class QuizUpdate(BaseModel):
 
 class QuizSummary(BaseModel):
     """Quiz in list view — no answers exposed."""
+
     id: str
     title: str
     description: str
@@ -90,6 +95,7 @@ class QuizSummary(BaseModel):
 
 class QuizDetail(BaseModel):
     """Full quiz for detail / edit views."""
+
     id: str
     title: str
     description: str
@@ -134,6 +140,7 @@ class QuizDeleteResponse(BaseModel):
 
 class QuizImportRequest(BaseModel):
     """Import a quiz from exported JSON."""
+
     title: str = Field(..., min_length=1, max_length=200)
     description: str = Field(default="")
     categories: list[str] = Field(default_factory=list)
@@ -145,6 +152,7 @@ class QuizImportRequest(BaseModel):
 
 # ── Generate ─────────────────────────────────────────
 
+
 class GenerateRequest(BaseModel):
     prompt: str = Field(..., min_length=3, max_length=500)
 
@@ -154,6 +162,7 @@ class GenerateResponse(BaseModel):
 
 
 # ── Attempts (server-side scoring) ───────────────────
+
 
 class AnswerSubmission(BaseModel):
     question_id: str
@@ -199,6 +208,7 @@ class AttemptListResponse(BaseModel):
 
 # ── Categories ───────────────────────────────────────
 
+
 class CategoryInfo(BaseModel):
     name: str
     count: int
@@ -209,6 +219,7 @@ class CategoryListResponse(BaseModel):
 
 
 # ── Leaderboard ──────────────────────────────────────
+
 
 class LeaderboardEntry(BaseModel):
     username: str
@@ -236,6 +247,7 @@ class GlobalLeaderboardResponse(BaseModel):
 
 
 # ── Profile ──────────────────────────────────────────
+
 
 class CreatedQuizInfo(BaseModel):
     id: str
@@ -285,6 +297,7 @@ class UserStatsResponse(BaseModel):
 
 
 # ── Shared error response ───────────────────────────
+
 
 class ErrorResponse(BaseModel):
     detail: str

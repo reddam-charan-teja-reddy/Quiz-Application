@@ -21,13 +21,20 @@ def make_quiz_data(
     """Create quiz creation payload."""
     questions = []
     for i in range(num_questions):
-        questions.append({
-            "id": f"q{i+1}",
-            "question": f"Question {i+1}?",
-            "options": [f"Option A{i}", f"Option B{i}", f"Option C{i}", f"Option D{i}"],
-            "answer": f"Option A{i}",
-            "explanation": f"Explanation for question {i+1}",
-        })
+        questions.append(
+            {
+                "id": f"q{i + 1}",
+                "question": f"Question {i + 1}?",
+                "options": [
+                    f"Option A{i}",
+                    f"Option B{i}",
+                    f"Option C{i}",
+                    f"Option D{i}",
+                ],
+                "answer": f"Option A{i}",
+                "explanation": f"Explanation for question {i + 1}",
+            }
+        )
 
     return {
         "title": title,
@@ -54,8 +61,10 @@ def make_answers(questions, all_correct=True):
         # If last option == answer, pick second-to-last
         if not all_correct and selected == q["answer"]:
             selected = q["options"][-2]
-        answers.append({
-            "question_id": q["id"],
-            "selected_answer": selected,
-        })
+        answers.append(
+            {
+                "question_id": q["id"],
+                "selected_answer": selected,
+            }
+        )
     return answers

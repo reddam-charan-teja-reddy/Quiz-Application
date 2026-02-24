@@ -243,14 +243,17 @@ Write tests that verify **workflows and constraints**, not trivial getters/sette
 
 ### Test Configuration
 
-Test settings are read from environment variables with fallback defaults. This keeps local dev, CI, and GitHub secrets aligned:
+Tests use dedicated test variables (not production runtime variables):
 
-| Variable         | Default (local)             | CI Source                       |
-| ---------------- | --------------------------- | ------------------------------- |
-| `MONGO_URI`      | `mongodb://localhost:27017` | Service container               |
-| `DB`             | `quiz_test`                 | Inline                          |
-| `JWT_SECRET`     | `test-secret-key`           | `${{ secrets.JWT_SECRET }}`     |
-| `GEMINI_API_KEY` | _(none needed for tests)_   | `${{ secrets.GEMINI_API_KEY }}` |
+| Variable          | Default (local)             | Scope                        |
+| ----------------- | --------------------------- | ---------------------------- |
+| `TEST_MONGO_URI`  | `mongodb://127.0.0.1:27017` | Backend pytest fixtures      |
+| `TEST_DB`         | `quiz_test`                 | Backend pytest fixtures      |
+| `TEST_JWT_SECRET` | `test-secret-key`           | Backend pytest fixtures      |
+| `E2E_MONGO_URI`   | `mongodb://127.0.0.1:27017` | Playwright backend webServer |
+| `E2E_DB`          | `quiz_e2e_test`             | Playwright backend webServer |
+
+Safety guards hard-fail tests if the target DB is not local/test-scoped.
 
 ### Backend Tests
 
@@ -263,6 +266,11 @@ uv run pytest -v --tb=short            # Verbose with shorter tracebacks
 ```
 
 Tests run against a separate `quiz_test` database that gets cleaned between runs. The test fixtures live in `tests/conftest.py` and `tests/factories.py`.
+
+⚠️ Backend tests are destructive to the selected test DB:
+
+- collections are cleared between tests
+- the full test DB is dropped after the session
 
 **What to test:**
 
@@ -312,6 +320,35 @@ bunx playwright test --headed   # See the browser
 
 E2E tests live in `frontend/e2e/`. They test full user flows (login → create quiz → take quiz → see results).
 
+By default, E2E teardown is non-destructive (it does not delete the shared E2E user). To enable account cleanup in local/CI test runs:
+
+```bash
+E2E_DELETE_SHARED_USER=true bunx playwright test
+```
+
+### Required Local Validation Before PR
+
+Before opening a PR, run the same core checks used in CI:
+
+```bash
+# Backend
+cd backend
+uv run ruff check . --fix
+uv run ruff format .
+uv run pytest
+uvx pip-audit
+
+# Frontend
+cd ../frontend
+bun run lint
+bun run test
+bun run build
+
+# Repo-level hooks
+cd ..
+uvx pre-commit run --all-files
+```
+
 ---
 
 ## Code Style
@@ -322,7 +359,7 @@ We use **ruff** for linting and formatting. Config is in `pyproject.toml`.
 
 ```bash
 cd backend
-uv run ruff check .                    # Lint
+uv run ruff check . --fix              # Lint + safe auto-fixes
 uv run ruff format .                   # Auto-format
 ```
 
@@ -363,10 +400,13 @@ The important rules:
 
    ```bash
    # Backend
-   cd backend && uv run ruff check . && uv run pytest
+   cd backend && uv run ruff check . --fix && uv run ruff format . && uv run pytest && uvx pip-audit
 
    # Frontend
    cd frontend && bun run lint && bun run test
+
+   # Repo-level hooks
+   cd .. && uvx pre-commit run --all-files
    ```
 
 5. **Update docs** if you added/changed endpoints, models, or user-facing features

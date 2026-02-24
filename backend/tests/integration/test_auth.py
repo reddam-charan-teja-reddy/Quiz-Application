@@ -117,7 +117,10 @@ class TestChangePassword:
     async def test_change_password_success(self, client, auth_headers):
         resp = await client.put(
             "/api/v1/auth/password",
-            json={"current_password": "testpass123", "new_password": "newpass456"},
+            json={
+                "current_password": "testpass123",
+                "new_password": "newpass456",
+            },
             headers=auth_headers,
         )
         assert resp.status_code == 200
@@ -133,7 +136,10 @@ class TestChangePassword:
     async def test_change_password_wrong_current(self, client, auth_headers):
         resp = await client.put(
             "/api/v1/auth/password",
-            json={"current_password": "wrongpass", "new_password": "newpass456"},
+            json={
+                "current_password": "wrongpass",
+                "new_password": "newpass456",
+            },
             headers=auth_headers,
         )
         assert resp.status_code == 400
@@ -142,10 +148,11 @@ class TestChangePassword:
     async def test_change_password_same_password(self, client, auth_headers):
         resp = await client.put(
             "/api/v1/auth/password",
-            json={"current_password": "testpass123", "new_password": "testpass123"},
+            json={
+                "current_password": "testpass123",
+                "new_password": "testpass123",
+            },
             headers=auth_headers,
         )
         assert resp.status_code == 400
         assert "differ" in resp.json()["detail"].lower()
-
-

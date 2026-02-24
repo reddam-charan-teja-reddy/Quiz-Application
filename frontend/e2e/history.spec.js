@@ -2,17 +2,11 @@
  * E2E tests — History page.
  */
 import { test, expect } from '@playwright/test';
-
-const uniqueUser = () => `history_${Date.now()}`;
+import { loginSharedUser } from './shared-user.js';
 
 test.describe('History', () => {
   test.beforeEach(async ({ page }) => {
-    const username = uniqueUser();
-    await page.goto('/register');
-    await page.locator('#username').fill(username);
-    await page.locator('#password').fill('testpass123');
-    await page.locator('#confirmPassword').fill('testpass123');
-    await page.getByRole('button', { name: 'Register' }).click();
+    await loginSharedUser(page);
     await expect(page).toHaveURL(/\/home/, { timeout: 10000 });
   });
 
@@ -24,7 +18,8 @@ test.describe('History', () => {
 
   test('should show empty state for new user', async ({ page }) => {
     await page.goto('/history');
-    const emptyState = page.locator('.empty-state-component, .no-attempts, text="No attempts"');
-    await expect(emptyState.first()).toBeVisible({ timeout: 10000 });
+    const emptyState = page.locator('.empty-state-component, .no-attempts').first();
+    const noAttemptsText = page.getByText(/No attempts/i).first();
+    await expect(emptyState.or(noAttemptsText)).toBeVisible({ timeout: 10000 });
   });
 });

@@ -3,8 +3,7 @@
  * Covers: registration, login, logout, session persistence.
  */
 import { test, expect } from '@playwright/test';
-
-const uniqueUser = () => `testuser_${Date.now()}`;
+import { getSharedUser, loginSharedUser } from './shared-user.js';
 
 test.describe('Authentication', () => {
   test('should navigate to login page by default', async ({ page }) => {
@@ -12,24 +11,14 @@ test.describe('Authentication', () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test('should register a new user and redirect to home', async ({ page }) => {
-    const username = uniqueUser();
-    await page.goto('/register');
-    await page.locator('#username').fill(username);
-    await page.locator('#password').fill('testpass123');
-    await page.locator('#confirmPassword').fill('testpass123');
-    await page.getByRole('button', { name: 'Register' }).click();
+  test('should login with shared user and redirect to home', async ({ page }) => {
+    await loginSharedUser(page);
     await expect(page).toHaveURL(/\/home/, { timeout: 10000 });
   });
 
   test('should login with existing credentials', async ({ page }) => {
-    const username = uniqueUser();
-    // Register first
-    await page.goto('/register');
-    await page.locator('#username').fill(username);
-    await page.locator('#password').fill('testpass123');
-    await page.locator('#confirmPassword').fill('testpass123');
-    await page.getByRole('button', { name: 'Register' }).click();
+    const { username, password } = getSharedUser();
+    await loginSharedUser(page);
     await expect(page).toHaveURL(/\/home/, { timeout: 10000 });
 
     // Logout
@@ -38,7 +27,7 @@ test.describe('Authentication', () => {
 
     // Login again
     await page.locator('#username').fill(username);
-    await page.locator('#password').fill('testpass123');
+    await page.locator('#password').fill(password);
     await page.getByRole('button', { name: 'Login' }).click();
     await expect(page).toHaveURL(/\/home/, { timeout: 10000 });
   });
@@ -52,21 +41,11 @@ test.describe('Authentication', () => {
   });
 
   test('should show error for duplicate registration', async ({ page }) => {
-    const username = uniqueUser();
-    // Register first
+    const { username, password } = getSharedUser();
     await page.goto('/register');
     await page.locator('#username').fill(username);
-    await page.locator('#password').fill('testpass123');
-    await page.locator('#confirmPassword').fill('testpass123');
-    await page.getByRole('button', { name: 'Register' }).click();
-    await expect(page).toHaveURL(/\/home/, { timeout: 10000 });
-
-    // Logout and try to register same username
-    await page.click('text=Logout');
-    await page.goto('/register');
-    await page.locator('#username').fill(username);
-    await page.locator('#password').fill('testpass123');
-    await page.locator('#confirmPassword').fill('testpass123');
+    await page.locator('#password').fill(password);
+    await page.locator('#confirmPassword').fill(password);
     await page.getByRole('button', { name: 'Register' }).click();
     await expect(page.locator('[role="alert"], .error-message, .register-error')).toBeVisible({ timeout: 5000 });
   });

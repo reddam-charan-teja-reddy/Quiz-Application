@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { useAppDispatch } from '../store/hooks';
 import { login, clearAuthError } from '../store/slices/authSlice';
 import { sanitizeText } from '../lib/sanitize';
 import './Login.css';
@@ -11,7 +11,6 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const dispatch = useAppDispatch();
-  const authError = useAppSelector((state) => state.auth.error);
   const navigate = useNavigate();
 
   useEffect(() => { document.title = 'Login — QuizApp'; }, []);

@@ -33,6 +33,7 @@ router = APIRouter(prefix="/api/v1", tags=["quizzes"])
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+
 def _doc_to_summary(doc: dict) -> QuizSummary:
     return QuizSummary(
         id=str(doc["_id"]),
@@ -72,6 +73,7 @@ def _doc_to_detail(doc: dict) -> QuizDetail:
 
 # ── List Quizzes (search / sort / paginate / filter) ─────────────────────────
 
+
 @router.get("/quizzes", response_model=QuizListResponse)
 async def list_quizzes(
     user: dict = Depends(get_current_user),
@@ -104,12 +106,7 @@ async def list_quizzes(
     total = await db.quizzes.count_documents(query)
     skip = (page - 1) * page_size
 
-    cursor = (
-        db.quizzes.find(query)
-        .sort(sort_field, sort_dir)
-        .skip(skip)
-        .limit(page_size)
-    )
+    cursor = db.quizzes.find(query).sort(sort_field, sort_dir).skip(skip).limit(page_size)
 
     quizzes: list[QuizSummary] = []
     async for doc in cursor:
@@ -119,6 +116,7 @@ async def list_quizzes(
 
 
 # ── My Quizzes ───────────────────────────────────────────────────────────────
+
 
 @router.get("/quizzes/my", response_model=QuizListResponse)
 async def my_quizzes(
@@ -140,6 +138,7 @@ async def my_quizzes(
 
 
 # ── Create Quiz ──────────────────────────────────────────────────────────────
+
 
 @router.post(
     "/quizzes",
@@ -173,6 +172,7 @@ async def create_quiz(body: QuizCreate, user: dict = Depends(get_current_user)):
 
 # ── Get Quiz ─────────────────────────────────────────────────────────────────
 
+
 @router.get(
     "/quizzes/{quiz_id}",
     response_model=QuizDetailResponse,
@@ -198,6 +198,7 @@ async def get_quiz(quiz_id: str, user: dict = Depends(get_current_user)):
 
 
 # ── Update Quiz ──────────────────────────────────────────────────────────────
+
 
 @router.put(
     "/quizzes/{quiz_id}",
@@ -243,6 +244,7 @@ async def update_quiz(quiz_id: str, body: QuizUpdate, user: dict = Depends(get_c
 
 # ── Delete Quiz ──────────────────────────────────────────────────────────────
 
+
 @router.delete(
     "/quizzes/{quiz_id}",
     response_model=QuizDeleteResponse,
@@ -264,7 +266,12 @@ async def delete_quiz(quiz_id: str, user: dict = Depends(get_current_user)):
 
     await db.quizzes.update_one(
         {"_id": ObjectId(quiz_id)},
-        {"$set": {"is_deleted": True, "updated_at": datetime.now(timezone.utc)}},
+        {
+            "$set": {
+                "is_deleted": True,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
     )
 
     logger.info("Quiz soft-deleted: %s by user %s", quiz_id, user["username"])
@@ -272,6 +279,7 @@ async def delete_quiz(quiz_id: str, user: dict = Depends(get_current_user)):
 
 
 # ── Duplicate Quiz ───────────────────────────────────────────────────────────
+
 
 @router.post(
     "/quizzes/{quiz_id}/duplicate",
@@ -320,6 +328,7 @@ async def duplicate_quiz(quiz_id: str, user: dict = Depends(get_current_user)):
 
 # ── Export Quiz ──────────────────────────────────────────────────────────────
 
+
 @router.get(
     "/quizzes/{quiz_id}/export",
     responses={404: {"model": ErrorResponse}},
@@ -354,6 +363,7 @@ async def export_quiz(quiz_id: str, user: dict = Depends(get_current_user)):
 
 
 # ── Import Quiz ──────────────────────────────────────────────────────────────
+
 
 @router.post(
     "/quizzes/import",
@@ -394,11 +404,17 @@ async def import_quiz(body: QuizImportRequest, user: dict = Depends(get_current_
 
 # ── Categories ───────────────────────────────────────────────────────────────
 
+
 @router.get("/categories", response_model=CategoryListResponse, tags=["categories"])
 async def list_categories(user: dict = Depends(get_current_user)):
     """Return all categories with their quiz count (from published, non-deleted quizzes)."""
     pipeline = [
-        {"$match": {"is_deleted": {"$ne": True}, "is_published": {"$ne": False}}},
+        {
+            "$match": {
+                "is_deleted": {"$ne": True},
+                "is_published": {"$ne": False},
+            }
+        },
         {"$unwind": "$categories"},
         {"$group": {"_id": "$categories", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
@@ -410,4 +426,3 @@ async def list_categories(user: dict = Depends(get_current_user)):
         categories.append(CategoryInfo(name=doc["_id"], count=doc["count"]))
 
     return CategoryListResponse(categories=categories)
-

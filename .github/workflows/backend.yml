@@ -73,9 +73,9 @@ jobs:
           --health-retries 5
 
     env:
-      MONGO_URI: mongodb://localhost:27017
-      DB: quiz_test
-      JWT_SECRET: test-secret-key-for-ci-only
+      TEST_MONGO_URI: mongodb://localhost:27017
+      TEST_DB: quiz_test
+      TEST_JWT_SECRET: test-secret-key-for-ci-only
       GEMINI_API_KEY: fake-key-for-tests
       CORS_ORIGINS: '["http://localhost:5173"]'
 
@@ -125,9 +125,9 @@ jobs:
           --health-retries 5
 
     env:
-      MONGO_URI: mongodb://localhost:27017
-      DB: quiz_test
-      JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-secret-key' }}
+      TEST_MONGO_URI: mongodb://localhost:27017
+      TEST_DB: quiz_test
+      TEST_JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-secret-key' }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'fake-key-for-tests' }}
       CORS_ORIGINS: '["http://localhost:5173"]'
 

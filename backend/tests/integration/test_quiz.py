@@ -44,7 +44,9 @@ class TestListQuizzes:
         )
 
         resp = await client.get(
-            "/api/v1/quizzes", params={"category": "Science"}, headers=auth_headers
+            "/api/v1/quizzes",
+            params={"category": "Science"},
+            headers=auth_headers,
         )
         assert resp.status_code == 200
         assert resp.json()["total"] == 1
@@ -63,17 +65,23 @@ class TestListQuizzes:
         )
 
         resp = await client.get(
-            "/api/v1/quizzes", params={"difficulty": "hard"}, headers=auth_headers
+            "/api/v1/quizzes",
+            params={"difficulty": "hard"},
+            headers=auth_headers,
         )
         assert resp.json()["total"] == 1
         assert resp.json()["quizzes"][0]["title"] == "Hard"
 
     async def test_list_quizzes_sort_by_title(self, client, auth_headers):
         await client.post(
-            "/api/v1/quizzes", json=make_quiz_data(title="Banana"), headers=auth_headers
+            "/api/v1/quizzes",
+            json=make_quiz_data(title="Banana"),
+            headers=auth_headers,
         )
         await client.post(
-            "/api/v1/quizzes", json=make_quiz_data(title="Apple"), headers=auth_headers
+            "/api/v1/quizzes",
+            json=make_quiz_data(title="Apple"),
+            headers=auth_headers,
         )
 
         resp = await client.get(
@@ -86,10 +94,14 @@ class TestListQuizzes:
 
     async def test_list_quizzes_sort_desc(self, client, auth_headers):
         await client.post(
-            "/api/v1/quizzes", json=make_quiz_data(title="Alpha"), headers=auth_headers
+            "/api/v1/quizzes",
+            json=make_quiz_data(title="Alpha"),
+            headers=auth_headers,
         )
         await client.post(
-            "/api/v1/quizzes", json=make_quiz_data(title="Zeta"), headers=auth_headers
+            "/api/v1/quizzes",
+            json=make_quiz_data(title="Zeta"),
+            headers=auth_headers,
         )
 
         resp = await client.get(
@@ -131,7 +143,9 @@ class TestListQuizzes:
             )
 
         resp = await client.get(
-            "/api/v1/quizzes", params={"page": 1, "page_size": 2}, headers=auth_headers
+            "/api/v1/quizzes",
+            params={"page": 1, "page_size": 2},
+            headers=auth_headers,
         )
         data = resp.json()
         assert data["total"] == 5
@@ -140,7 +154,9 @@ class TestListQuizzes:
         assert data["page_size"] == 2
 
         resp2 = await client.get(
-            "/api/v1/quizzes", params={"page": 3, "page_size": 2}, headers=auth_headers
+            "/api/v1/quizzes",
+            params={"page": 3, "page_size": 2},
+            headers=auth_headers,
         )
         assert len(resp2.json()["quizzes"]) == 1
 
@@ -179,9 +195,7 @@ class TestCreateQuiz:
     """POST /api/v1/quizzes"""
 
     async def test_create_quiz_success(self, client, auth_headers):
-        resp = await client.post(
-            "/api/v1/quizzes", json=make_quiz_data(), headers=auth_headers
-        )
+        resp = await client.post("/api/v1/quizzes", json=make_quiz_data(), headers=auth_headers)
         assert resp.status_code == 201
         data = resp.json()
         assert "id" in data
@@ -191,13 +205,9 @@ class TestCreateQuiz:
         payload = make_quiz_data()
         payload["questions"][0].pop("id", None)
 
-        resp = await client.post(
-            "/api/v1/quizzes", json=payload, headers=auth_headers
-        )
+        resp = await client.post("/api/v1/quizzes", json=payload, headers=auth_headers)
 
         assert resp.status_code == 422
-
-
 
 
 class TestGetQuiz:
@@ -228,9 +238,7 @@ class TestGetQuiz:
         assert resp.json()["can_edit"] is False
 
     async def test_get_quiz_not_found(self, client, auth_headers):
-        resp = await client.get(
-            "/api/v1/quizzes/000000000000000000000000", headers=auth_headers
-        )
+        resp = await client.get("/api/v1/quizzes/000000000000000000000000", headers=auth_headers)
         assert resp.status_code == 404
 
     async def test_get_unpublished_quiz_hidden_from_others(
@@ -257,9 +265,7 @@ class TestUpdateQuiz:
         quiz_id = create_resp.json()["id"]
 
         updated = make_quiz_data(title="Updated Title")
-        resp = await client.put(
-            f"/api/v1/quizzes/{quiz_id}", json=updated, headers=auth_headers
-        )
+        resp = await client.put(f"/api/v1/quizzes/{quiz_id}", json=updated, headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json()["success"] is True
 
@@ -267,9 +273,7 @@ class TestUpdateQuiz:
         detail = await client.get(f"/api/v1/quizzes/{quiz_id}", headers=auth_headers)
         assert detail.json()["quiz"]["title"] == "Updated Title"
 
-    async def test_update_quiz_ownership_check(
-        self, client, auth_headers, second_auth_headers
-    ):
+    async def test_update_quiz_ownership_check(self, client, auth_headers, second_auth_headers):
         create_resp = await client.post(
             "/api/v1/quizzes", json=make_quiz_data(), headers=auth_headers
         )
@@ -299,17 +303,13 @@ class TestDeleteQuiz:
         detail = await client.get(f"/api/v1/quizzes/{quiz_id}", headers=auth_headers)
         assert detail.status_code == 404
 
-    async def test_delete_quiz_ownership_check(
-        self, client, auth_headers, second_auth_headers
-    ):
+    async def test_delete_quiz_ownership_check(self, client, auth_headers, second_auth_headers):
         create_resp = await client.post(
             "/api/v1/quizzes", json=make_quiz_data(), headers=auth_headers
         )
         quiz_id = create_resp.json()["id"]
 
-        resp = await client.delete(
-            f"/api/v1/quizzes/{quiz_id}", headers=second_auth_headers
-        )
+        resp = await client.delete(f"/api/v1/quizzes/{quiz_id}", headers=second_auth_headers)
         assert resp.status_code == 403
 
 
@@ -324,9 +324,7 @@ class TestDuplicateQuiz:
         )
         quiz_id = create_resp.json()["id"]
 
-        dup_resp = await client.post(
-            f"/api/v1/quizzes/{quiz_id}/duplicate", headers=auth_headers
-        )
+        dup_resp = await client.post(f"/api/v1/quizzes/{quiz_id}/duplicate", headers=auth_headers)
         assert dup_resp.status_code == 201
         new_id = dup_resp.json()["id"]
         assert new_id != quiz_id
@@ -335,9 +333,7 @@ class TestDuplicateQuiz:
         assert detail.status_code == 200
         assert "Copy" in detail.json()["quiz"]["title"]
 
-    async def test_duplicate_by_other_user(
-        self, client, auth_headers, second_auth_headers
-    ):
+    async def test_duplicate_by_other_user(self, client, auth_headers, second_auth_headers):
         create_resp = await client.post(
             "/api/v1/quizzes",
             json=make_quiz_data(title="Original"),
@@ -374,9 +370,7 @@ class TestExportQuiz:
         )
         quiz_id = create_resp.json()["id"]
 
-        resp = await client.get(
-            f"/api/v1/quizzes/{quiz_id}/export", headers=auth_headers
-        )
+        resp = await client.get(f"/api/v1/quizzes/{quiz_id}/export", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["title"] == "Exportable"
@@ -385,7 +379,8 @@ class TestExportQuiz:
 
     async def test_export_not_found(self, client, auth_headers):
         resp = await client.get(
-            "/api/v1/quizzes/000000000000000000000000/export", headers=auth_headers
+            "/api/v1/quizzes/000000000000000000000000/export",
+            headers=auth_headers,
         )
         assert resp.status_code == 404
 
@@ -409,9 +404,7 @@ class TestImportQuiz:
                 }
             ],
         }
-        resp = await client.post(
-            "/api/v1/quizzes/import", json=payload, headers=auth_headers
-        )
+        resp = await client.post("/api/v1/quizzes/import", json=payload, headers=auth_headers)
         assert resp.status_code == 201
         new_id = resp.json()["id"]
 
@@ -429,9 +422,7 @@ class TestImportQuiz:
         )
         quiz_id = create_resp.json()["id"]
 
-        export_resp = await client.get(
-            f"/api/v1/quizzes/{quiz_id}/export", headers=auth_headers
-        )
+        export_resp = await client.get(f"/api/v1/quizzes/{quiz_id}/export", headers=auth_headers)
         exported = export_resp.json()
 
         # Add required question IDs for import

@@ -20,9 +20,7 @@ MODEL_NAME = "gemini-2.5-flash-lite"
 def _get_client() -> genai.Client:
     """Return a configured Gemini client, initializing on first call."""
     if not settings.GEMINI_API_KEY:
-        raise RuntimeError(
-            "GEMINI_API_KEY is not set. Add it to your .env file."
-        )
+        raise RuntimeError("GEMINI_API_KEY is not set. Add it to your .env file.")
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
     logger.info("Gemini client initialized (model=%s)", MODEL_NAME)
     return client

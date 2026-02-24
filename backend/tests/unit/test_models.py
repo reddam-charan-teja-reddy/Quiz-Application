@@ -117,7 +117,11 @@ class TestQuizCreateValidation:
 
     def test_time_limit_max_180(self):
         with pytest.raises(ValidationError):
-            QuizCreate(title="Test", time_limit_minutes=181, questions=[self._question()])
+            QuizCreate(
+                title="Test",
+                time_limit_minutes=181,
+                questions=[self._question()],
+            )
 
     def test_time_limit_min_1(self):
         with pytest.raises(ValidationError):

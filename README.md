@@ -32,7 +32,7 @@ A full-stack quiz application built with **React 19** + **Redux Toolkit** and **
 | Charts             | Recharts 3.7                                 |
 | Backend            | FastAPI 0.117, Python 3.12, Pydantic 2.x     |
 | Database           | MongoDB (pymongo 4.10 AsyncMongoClient)      |
-| Authentication     | JWT (python-jose), bcrypt (passlib)          |
+| Authentication     | JWT (authlib), Argon2 (argon2-cffi)          |
 | AI                 | Google Gemini (google-genai 1.64+)           |
 | Rate Limiting      | slowapi                                      |
 | Testing (Backend)  | pytest, pytest-asyncio, httpx                |
@@ -117,7 +117,52 @@ Playwright uses `frontend/playwright.config.js` to start:
 - Backend: `uv run uvicorn app.main:app --host 127.0.0.1 --port 8000`
 - Frontend: `bun run dev`
 
-You can still reuse already-running local servers in non-CI mode.
+By default, E2E teardown is non-destructive and does **not** delete the shared user.
+Enable cleanup only for local/CI test runs:
+
+```bash
+E2E_DELETE_SHARED_USER=true bunx playwright test
+```
+
+### Test Database Safety
+
+Backend tests and E2E runs are destructive to their target test database (collection cleanup + DB reset in backend tests).
+Safety guards now hard-fail when:
+
+- `ENVIRONMENT` is `testing` but `MONGO_URI` is non-local (for example `mongodb+srv://...`)
+- test DB name does not look test-scoped (for example missing `test` / `e2e`)
+
+Use only local test targets:
+
+```env
+TEST_MONGO_URI=mongodb://127.0.0.1:27017
+TEST_DB=quiz_test
+E2E_MONGO_URI=mongodb://127.0.0.1:27017
+E2E_DB=quiz_e2e_test
+```
+
+### Local Validation Run (Before Push)
+
+Run this from a clean working tree before opening a PR or pushing to `main`:
+
+```bash
+# Backend validation
+cd backend
+uv run ruff check . --fix
+uv run ruff format .
+uv run pytest
+uvx pip-audit
+
+# Frontend validation
+cd ../frontend
+bun run lint
+bun run test
+bun run build
+
+# Repo-level pre-commit validation
+cd ..
+uvx pre-commit run --all-files
+```
 
 ## Project Structure
 
@@ -234,6 +279,16 @@ See [docs/API_REFERENCE.md](docs/API_REFERENCE.md) for full request/response sch
 | Variable       | Default                 | Description          |
 | -------------- | ----------------------- | -------------------- |
 | `VITE_API_URL` | `http://localhost:8000` | Backend API base URL |
+
+### Test-Only Variables (do not put in production env files)
+
+| Variable          | Default                     | Used by                   |
+| ----------------- | --------------------------- | ------------------------- |
+| `TEST_MONGO_URI`  | `mongodb://127.0.0.1:27017` | Backend pytest fixtures   |
+| `TEST_DB`         | `quiz_test`                 | Backend pytest fixtures   |
+| `TEST_JWT_SECRET` | `test-secret-key`           | Backend pytest fixtures   |
+| `E2E_MONGO_URI`   | `mongodb://127.0.0.1:27017` | Playwright backend server |
+| `E2E_DB`          | `quiz_e2e_test`             | Playwright backend server |
 
 ## Contributing
 

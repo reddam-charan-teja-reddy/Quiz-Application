@@ -20,7 +20,6 @@ dependencies = [
     # Core Framework
     "fastapi==0.117.1",
     "uvicorn==0.37.0",
-    "starlette==0.48.0",
     # Database
     "pymongo==4.10.1",
     # Data Validation & Settings
@@ -28,10 +27,9 @@ dependencies = [
     "pydantic-settings==2.12.0",
     "pydantic_core==2.33.2",
     # Authentication & Security
-    "python-jose[cryptography]==3.5.0",
-    "passlib[bcrypt]==1.7.4",
-    "bcrypt==4.2.1",
-    "cryptography==43.0.3",
+    "authlib==1.6.4",
+    "argon2-cffi==25.1.0",
+    "cryptography==45.0.7",
     # Rate Limiting
     "slowapi==0.1.9",
     "limits==5.8.0",
@@ -41,7 +39,6 @@ dependencies = [
     "python-dotenv==1.2.1",
     "python-multipart==0.0.20",
     "anyio==4.12.1",
-    "typing_extensions==4.12.2",
 ]
 
 [dependency-groups]
@@ -50,7 +47,7 @@ dev = [
     "pytest-asyncio==1.0.0",
     "httpx==0.28.1",
     "pytest-cov==5.0.0",
-    "ruff==0.9.9",
+    "ruff==0.11.1",
     "pre-commit==4.2.0",
 ]
 
@@ -79,10 +76,17 @@ ignore = [
     "S105",  # hardcoded password (false positives on defaults)
     "S106",  # hardcoded password argument
     "B008",  # function call in default argument (FastAPI Depends)
+    "B904",  # raise-from requirement in broad exception handlers
+    "UP017", # datetime.UTC alias modernization
+    "S104",  # binding all interfaces (intentional for containerized app run)
+    "RUF022",# __all__ sorting
 ]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S107", "I001", "F401", "RUF015"]
 
 # ── Pytest ───────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]

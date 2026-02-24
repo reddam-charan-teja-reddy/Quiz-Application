@@ -368,8 +368,9 @@ const EditQuiz = () => {
                 </div>
 
                 <div className='form-group'>
-                  <label>Question *</label>
+                  <label htmlFor={`question-${questionIndex}`}>Question *</label>
                   <textarea
+                    id={`question-${questionIndex}`}
                     value={question.question}
                     onChange={(e) =>
                       handleQuestionChange(
@@ -387,10 +388,11 @@ const EditQuiz = () => {
                 <div className='options-grid'>
                   {question.options.map((option, optionIndex) => (
                     <div key={optionIndex} className='form-group'>
-                      <label>
+                      <label htmlFor={`option-${questionIndex}-${optionIndex}`}>
                         Option {String.fromCharCode(65 + optionIndex)} *
                       </label>
                       <input
+                        id={`option-${questionIndex}-${optionIndex}`}
                         type='text'
                         value={option}
                         onChange={(e) =>
@@ -410,8 +412,9 @@ const EditQuiz = () => {
                 </div>
 
                 <div className='form-group'>
-                  <label>Correct Answer *</label>
+                  <label htmlFor={`correct-answer-${questionIndex}`}>Correct Answer *</label>
                   <select
+                    id={`correct-answer-${questionIndex}`}
                     value={question.answer}
                     onChange={(e) =>
                       handleQuestionChange(
@@ -431,8 +434,9 @@ const EditQuiz = () => {
                 </div>
 
                 <div className='form-group'>
-                  <label>Explanation (optional)</label>
+                  <label htmlFor={`explanation-${questionIndex}`}>Explanation (optional)</label>
                   <textarea
+                    id={`explanation-${questionIndex}`}
                     value={question.explanation || ''}
                     onChange={(e) =>
                       handleQuestionChange(

@@ -7,18 +7,14 @@ from tests.factories import make_quiz_data, make_answers
 
 async def _create_quiz(client, auth_headers):
     """Helper: create a published quiz and return its ID."""
-    resp = await client.post(
-        "/api/v1/quizzes", json=make_quiz_data(), headers=auth_headers
-    )
+    resp = await client.post("/api/v1/quizzes", json=make_quiz_data(), headers=auth_headers)
     assert resp.status_code == 201
     return resp.json()["id"]
 
 
 async def _start_attempt(client, auth_headers, quiz_id):
     """Helper: start an attempt and return (attempt_id, questions)."""
-    resp = await client.post(
-        f"/api/v1/attempts/start/{quiz_id}", headers=auth_headers
-    )
+    resp = await client.post(f"/api/v1/attempts/start/{quiz_id}", headers=auth_headers)
     assert resp.status_code == 201
     data = resp.json()
     return data["attempt_id"], data["questions"]
@@ -40,9 +36,7 @@ class TestStartAttempt:
 
     async def test_start_attempt_success(self, client, auth_headers):
         quiz_id = await _create_quiz(client, auth_headers)
-        resp = await client.post(
-            f"/api/v1/attempts/start/{quiz_id}", headers=auth_headers
-        )
+        resp = await client.post(f"/api/v1/attempts/start/{quiz_id}", headers=auth_headers)
         assert resp.status_code == 201
         data = resp.json()
         assert data["quiz_id"] == quiz_id
@@ -51,9 +45,7 @@ class TestStartAttempt:
 
     async def test_start_attempt_returns_questions_with_ids(self, client, auth_headers):
         quiz_id = await _create_quiz(client, auth_headers)
-        resp = await client.post(
-            f"/api/v1/attempts/start/{quiz_id}", headers=auth_headers
-        )
+        resp = await client.post(f"/api/v1/attempts/start/{quiz_id}", headers=auth_headers)
         for q in resp.json()["questions"]:
             assert "id" in q
             assert "question" in q
@@ -83,9 +75,7 @@ class TestFinishAttempt:
         quiz_id = await _create_quiz(client, auth_headers)
         attempt_id, questions = await _start_attempt(client, auth_headers, quiz_id)
 
-        resp = await _finish_attempt(
-            client, auth_headers, attempt_id, questions, all_correct=False
-        )
+        resp = await _finish_attempt(client, auth_headers, attempt_id, questions, all_correct=False)
         assert resp.status_code == 200
         data = resp.json()
         assert data["score"] == 0
@@ -141,15 +131,11 @@ class TestFinishAttempt:
         assert resp.status_code == 400
         assert "already" in resp.json()["detail"].lower()
 
-    async def test_finish_other_users_attempt(
-        self, client, auth_headers, second_auth_headers
-    ):
+    async def test_finish_other_users_attempt(self, client, auth_headers, second_auth_headers):
         quiz_id = await _create_quiz(client, auth_headers)
         attempt_id, questions = await _start_attempt(client, auth_headers, quiz_id)
 
-        resp = await _finish_attempt(
-            client, second_auth_headers, attempt_id, questions
-        )
+        resp = await _finish_attempt(client, second_auth_headers, attempt_id, questions)
         assert resp.status_code == 403
 
 
@@ -177,9 +163,7 @@ class TestListAttempts:
         resp = await client.get("/api/v1/attempts", headers=auth_headers)
         assert len(resp.json()["attempts"]) == 1
 
-    async def test_list_attempts_only_own(
-        self, client, auth_headers, second_auth_headers
-    ):
+    async def test_list_attempts_only_own(self, client, auth_headers, second_auth_headers):
         quiz_id = await _create_quiz(client, auth_headers)
 
         # testuser completes an attempt
@@ -199,9 +183,7 @@ class TestGetAttempt:
         attempt_id, questions = await _start_attempt(client, auth_headers, quiz_id)
         await _finish_attempt(client, auth_headers, attempt_id, questions)
 
-        resp = await client.get(
-            f"/api/v1/attempts/{attempt_id}", headers=auth_headers
-        )
+        resp = await client.get(f"/api/v1/attempts/{attempt_id}", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["attempt_id"] == attempt_id
@@ -210,21 +192,15 @@ class TestGetAttempt:
         assert "details" in data
 
     async def test_get_attempt_not_found(self, client, auth_headers):
-        resp = await client.get(
-            "/api/v1/attempts/000000000000000000000000", headers=auth_headers
-        )
+        resp = await client.get("/api/v1/attempts/000000000000000000000000", headers=auth_headers)
         assert resp.status_code == 404
 
-    async def test_get_attempt_belongs_to_other(
-        self, client, auth_headers, second_auth_headers
-    ):
+    async def test_get_attempt_belongs_to_other(self, client, auth_headers, second_auth_headers):
         quiz_id = await _create_quiz(client, auth_headers)
         attempt_id, questions = await _start_attempt(client, auth_headers, quiz_id)
         await _finish_attempt(client, auth_headers, attempt_id, questions)
 
-        resp = await client.get(
-            f"/api/v1/attempts/{attempt_id}", headers=second_auth_headers
-        )
+        resp = await client.get(f"/api/v1/attempts/{attempt_id}", headers=second_auth_headers)
         assert resp.status_code == 403
 
 
@@ -236,27 +212,19 @@ class TestDeleteAttempt:
         attempt_id, questions = await _start_attempt(client, auth_headers, quiz_id)
         await _finish_attempt(client, auth_headers, attempt_id, questions)
 
-        resp = await client.delete(
-            f"/api/v1/attempts/{attempt_id}", headers=auth_headers
-        )
+        resp = await client.delete(f"/api/v1/attempts/{attempt_id}", headers=auth_headers)
         assert resp.status_code == 200
 
         # Should be gone
-        get_resp = await client.get(
-            f"/api/v1/attempts/{attempt_id}", headers=auth_headers
-        )
+        get_resp = await client.get(f"/api/v1/attempts/{attempt_id}", headers=auth_headers)
         assert get_resp.status_code == 404
 
-    async def test_delete_other_users_attempt(
-        self, client, auth_headers, second_auth_headers
-    ):
+    async def test_delete_other_users_attempt(self, client, auth_headers, second_auth_headers):
         quiz_id = await _create_quiz(client, auth_headers)
         attempt_id, questions = await _start_attempt(client, auth_headers, quiz_id)
         await _finish_attempt(client, auth_headers, attempt_id, questions)
 
-        resp = await client.delete(
-            f"/api/v1/attempts/{attempt_id}", headers=second_auth_headers
-        )
+        resp = await client.delete(f"/api/v1/attempts/{attempt_id}", headers=second_auth_headers)
         assert resp.status_code == 403
 
     async def test_delete_attempt_not_found(self, client, auth_headers):

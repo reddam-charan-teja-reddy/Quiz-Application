@@ -3,9 +3,9 @@
 import logging
 from datetime import datetime, timezone
 
+from authlib.jose import JoseError, jwt
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from jose import JWTError, jwt
 
 from app.config import settings
 from app.db import db
@@ -122,16 +122,16 @@ async def refresh_token(request: Request, response: Response):
         raise HTTPException(status_code=401, detail="No refresh token provided")
 
     try:
-        payload = jwt.decode(
-            token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
-        )
+        claims = jwt.decode(token, settings.JWT_SECRET)
+        claims.validate()
+        payload = dict(claims)
         user_id = payload.get("sub")
         username = payload.get("username")
         token_type = payload.get("type")
 
         if not user_id or token_type != "refresh":
             raise HTTPException(status_code=401, detail="Invalid refresh token")
-    except JWTError:
+    except JoseError:
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
     user = await db.users.find_one({"_id": ObjectId(user_id), "is_deleted": {"$ne": True}})

@@ -6,16 +6,12 @@ from tests.factories import make_quiz_data, make_answers
 
 
 async def _create_quiz(client, auth_headers):
-    resp = await client.post(
-        "/api/v1/quizzes", json=make_quiz_data(), headers=auth_headers
-    )
+    resp = await client.post("/api/v1/quizzes", json=make_quiz_data(), headers=auth_headers)
     return resp.json()["id"]
 
 
 async def _complete_attempt(client, auth_headers, quiz_id, all_correct=True):
-    start = await client.post(
-        f"/api/v1/attempts/start/{quiz_id}", headers=auth_headers
-    )
+    start = await client.post(f"/api/v1/attempts/start/{quiz_id}", headers=auth_headers)
     data = start.json()
     answers = make_answers(data["questions"], all_correct=all_correct)
     await client.post(

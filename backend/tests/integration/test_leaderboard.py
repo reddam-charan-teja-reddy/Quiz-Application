@@ -7,17 +7,13 @@ from tests.factories import make_quiz_data, make_answers
 
 async def _create_quiz(client, auth_headers):
     """Helper: create a published quiz and return its ID."""
-    resp = await client.post(
-        "/api/v1/quizzes", json=make_quiz_data(), headers=auth_headers
-    )
+    resp = await client.post("/api/v1/quizzes", json=make_quiz_data(), headers=auth_headers)
     return resp.json()["id"]
 
 
 async def _complete_attempt(client, auth_headers, quiz_id, all_correct=True):
     """Helper: start and finish an attempt, return the result."""
-    start = await client.post(
-        f"/api/v1/attempts/start/{quiz_id}", headers=auth_headers
-    )
+    start = await client.post(f"/api/v1/attempts/start/{quiz_id}", headers=auth_headers)
     data = start.json()
     attempt_id = data["attempt_id"]
     questions = data["questions"]
@@ -58,9 +54,7 @@ class TestQuizLeaderboard:
         assert entries[0]["score"] >= entries[1]["score"]
 
     async def test_leaderboard_quiz_not_found(self, client):
-        resp = await client.get(
-            "/api/v1/quizzes/000000000000000000000000/leaderboard"
-        )
+        resp = await client.get("/api/v1/quizzes/000000000000000000000000/leaderboard")
         assert resp.status_code == 404
 
 
@@ -72,9 +66,7 @@ class TestGlobalLeaderboard:
         assert resp.status_code == 200
         assert resp.json()["entries"] == []
 
-    async def test_global_leaderboard_with_entries(
-        self, client, auth_headers, second_auth_headers
-    ):
+    async def test_global_leaderboard_with_entries(self, client, auth_headers, second_auth_headers):
         quiz_id = await _create_quiz(client, auth_headers)
 
         await _complete_attempt(client, auth_headers, quiz_id, all_correct=True)

@@ -48,15 +48,11 @@ class TestAuthGuards:
         assert resp.status_code == 401
 
     async def test_post_generate_requires_auth(self, client):
-        resp = await client.post(
-            "/api/v1/generate", json={"prompt": "Make a quiz about cats"}
-        )
+        resp = await client.post("/api/v1/generate", json={"prompt": "Make a quiz about cats"})
         assert resp.status_code == 401
 
     async def test_start_attempt_requires_auth(self, client):
-        resp = await client.post(
-            "/api/v1/attempts/start/000000000000000000000000"
-        )
+        resp = await client.post("/api/v1/attempts/start/000000000000000000000000")
         assert resp.status_code == 401
 
     async def test_get_categories_requires_auth(self, client):
@@ -82,21 +78,15 @@ class TestAuthGuards:
         assert resp.status_code == 401
 
     async def test_duplicate_quiz_requires_auth(self, client):
-        resp = await client.post(
-            "/api/v1/quizzes/000000000000000000000000/duplicate"
-        )
+        resp = await client.post("/api/v1/quizzes/000000000000000000000000/duplicate")
         assert resp.status_code == 401
 
     async def test_export_quiz_requires_auth(self, client):
-        resp = await client.get(
-            "/api/v1/quizzes/000000000000000000000000/export"
-        )
+        resp = await client.get("/api/v1/quizzes/000000000000000000000000/export")
         assert resp.status_code == 401
 
     async def test_import_quiz_requires_auth(self, client):
-        resp = await client.post(
-            "/api/v1/quizzes/import", json=make_quiz_data()
-        )
+        resp = await client.post("/api/v1/quizzes/import", json=make_quiz_data())
         assert resp.status_code == 401
 
     async def test_finish_attempt_requires_auth(self, client):
@@ -107,13 +97,9 @@ class TestAuthGuards:
         assert resp.status_code == 401
 
     async def test_get_attempt_requires_auth(self, client):
-        resp = await client.get(
-            "/api/v1/attempts/000000000000000000000000"
-        )
+        resp = await client.get("/api/v1/attempts/000000000000000000000000")
         assert resp.status_code == 401
 
     async def test_delete_attempt_requires_auth(self, client):
-        resp = await client.delete(
-            "/api/v1/attempts/000000000000000000000000"
-        )
+        resp = await client.delete("/api/v1/attempts/000000000000000000000000")
         assert resp.status_code == 401

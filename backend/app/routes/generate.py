@@ -9,7 +9,12 @@ from pydantic import ValidationError
 
 from app.gemini_client import MODEL_NAME, get_client
 from app.limiter import limiter
-from app.models import ErrorResponse, GenerateRequest, GenerateResponse, QuizDetail
+from app.models import (
+    ErrorResponse,
+    GenerateRequest,
+    GenerateResponse,
+    QuizDetail,
+)
 from app.utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -20,7 +25,10 @@ router = APIRouter(prefix="/api/v1", tags=["generate"])
 QUIZ_SCHEMA = {
     "type": "object",
     "properties": {
-        "id": {"type": "string", "description": "Will be ignored — backend assigns the real ID."},
+        "id": {
+            "type": "string",
+            "description": "Will be ignored — backend assigns the real ID.",
+        },
         "title": {"type": "string"},
         "description": {"type": "string"},
         "author": {"type": "string"},
@@ -46,7 +54,14 @@ QUIZ_SCHEMA = {
             },
         },
     },
-    "required": ["title", "description", "author", "num_questions", "categories", "questions"],
+    "required": [
+        "title",
+        "description",
+        "author",
+        "num_questions",
+        "categories",
+        "questions",
+    ],
 }
 
 
@@ -63,8 +78,9 @@ async def generate_quiz(
 ):
     """Generate a quiz using the Gemini API with structured JSON output."""
     prompt = f"""
-    You are a helpful assistant who is an expert in creating educational material. 
-    Your task is to generate a complete, high-quality quiz based on the User Request: "{req.prompt}".
+    You are a helpful assistant who is an expert in creating educational material.
+    Your task is to generate a complete, high-quality quiz based on the User
+    Request: "{req.prompt}".
 
     Please make the questions clear and engaging. The difficulty should be appropriate
     based on the request provided. Ensure the provided answers are factually correct.
@@ -72,7 +88,11 @@ async def generate_quiz(
     """
 
     try:
-        logger.info("Generating quiz for topic '%s' (user=%s)", req.prompt, user["username"])
+        logger.info(
+            "Generating quiz for topic '%s' (user=%s)",
+            req.prompt,
+            user["username"],
+        )
 
         client = get_client()
 
@@ -89,7 +109,10 @@ async def generate_quiz(
         raw_text = response.text
         if not raw_text:
             logger.error("Gemini returned empty response")
-            raise HTTPException(status_code=500, detail="AI returned an empty response. Please try again.")
+            raise HTTPException(
+                status_code=500,
+                detail="AI returned an empty response. Please try again.",
+            )
 
         quiz_data = json.loads(raw_text)
 
@@ -105,7 +128,11 @@ async def generate_quiz(
             questions=quiz_data.get("questions", []),
         )
 
-        logger.info("Quiz generated successfully: '%s' (%d questions)", quiz.title, quiz.num_questions)
+        logger.info(
+            "Quiz generated successfully: '%s' (%d questions)",
+            quiz.title,
+            quiz.num_questions,
+        )
         return GenerateResponse(quiz=quiz)
 
     except json.JSONDecodeError as e:
@@ -132,4 +159,3 @@ async def generate_quiz(
             status_code=500,
             detail="An unexpected error occurred while generating the quiz.",
         )
-

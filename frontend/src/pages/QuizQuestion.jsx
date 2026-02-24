@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { recordAnswer } from '../store/slices/attemptSlice';
-import { useFinishAttemptMutation } from '../store/api/apiSlice';
 import Sidebar from '../components/Sidebar';
 import QuizTimer from '../components/QuizTimer';
 import './QuizQuestion.css';
@@ -12,7 +11,6 @@ const QuizQuestion = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { currentQuiz, attemptId, answers, startTime } = useAppSelector((state) => state.attempt);
-  const [finishAttemptApi] = useFinishAttemptMutation();
 
   useEffect(() => { document.title = 'Quiz — QuizApp'; }, []);
 

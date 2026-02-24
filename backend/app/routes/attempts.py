@@ -34,6 +34,7 @@ router = APIRouter(prefix="/api/v1", tags=["attempts"])
 
 # ── Start an attempt ─────────────────────────────────────────────────────────
 
+
 @router.post(
     "/attempts/start/{quiz_id}",
     response_model=AttemptStartResponse,
@@ -76,23 +77,32 @@ async def start_attempt(quiz_id: str, user: dict = Depends(get_current_user)):
 
     result = await db.attempts.insert_one(attempt_doc)
     attempt_id = str(result.inserted_id)
-    logger.info("Attempt started: %s for quiz %s by user %s", attempt_id, quiz_id, user["username"])
+    logger.info(
+        "Attempt started: %s for quiz %s by user %s",
+        attempt_id,
+        quiz_id,
+        user["username"],
+    )
 
     return AttemptStartResponse(
         attempt_id=attempt_id,
         quiz_id=quiz_id,
         total_questions=len(questions),
-        questions=[{
-            "id": q["id"],
-            "question": q["question"],
-            "options": q["options"],
-            "answer": q["answer"],
-            "explanation": q.get("explanation", ""),
-        } for q in questions],
+        questions=[
+            {
+                "id": q["id"],
+                "question": q["question"],
+                "options": q["options"],
+                "answer": q["answer"],
+                "explanation": q.get("explanation", ""),
+            }
+            for q in questions
+        ],
     )
 
 
 # ── Finish an attempt (submit all answers, server scores) ────────────────────
+
 
 @router.post(
     "/attempts/{attempt_id}/finish",
@@ -148,14 +158,16 @@ async def finish_attempt(
             correct_count += 1
 
         q_data = question_lookup.get(submission.question_id, {})
-        details.append({
-            "question_id": submission.question_id,
-            "question": q_data.get("question", ""),
-            "selected_answer": submission.selected_answer,
-            "correct_answer": expected or "",
-            "is_correct": is_correct,
-            "explanation": q_data.get("explanation", ""),
-        })
+        details.append(
+            {
+                "question_id": submission.question_id,
+                "question": q_data.get("question", ""),
+                "selected_answer": submission.selected_answer,
+                "correct_answer": expected or "",
+                "is_correct": is_correct,
+                "explanation": q_data.get("explanation", ""),
+            }
+        )
 
     total = len(attempt_questions) or len(correct_answers)
     score = round((correct_count / total) * 100) if total > 0 else 0
@@ -179,7 +191,11 @@ async def finish_attempt(
 
     logger.info(
         "Attempt finished: %s — score %d/%d (%d%%) by user %s",
-        attempt_id, correct_count, total, score, user["username"],
+        attempt_id,
+        correct_count,
+        total,
+        score,
+        user["username"],
     )
 
     return AttemptResult(
@@ -197,14 +213,11 @@ async def finish_attempt(
 
 # ── List user's attempts (history) ──────────────────────────────────────────
 
+
 @router.get("/attempts", response_model=AttemptListResponse)
 async def list_attempts(user: dict = Depends(get_current_user)):
     """Return all completed attempts for the authenticated user (newest first)."""
-    cursor = (
-        db.attempts
-        .find({"user_id": user["id"], "status": "completed"})
-        .sort("created_at", -1)
-    )
+    cursor = db.attempts.find({"user_id": user["id"], "status": "completed"}).sort("created_at", -1)
 
     attempts: list[AttemptSummary] = []
     async for doc in cursor:
@@ -224,6 +237,7 @@ async def list_attempts(user: dict = Depends(get_current_user)):
 
 
 # ── Get single attempt detail ────────────────────────────────────────────────
+
 
 @router.get(
     "/attempts/{attempt_id}",
@@ -258,6 +272,7 @@ async def get_attempt(attempt_id: str, user: dict = Depends(get_current_user)):
 
 # ── Delete a single attempt ─────────────────────────────────────────────────
 
+
 @router.delete(
     "/attempts/{attempt_id}",
     responses={404: {"model": ErrorResponse}},
@@ -281,6 +296,7 @@ async def delete_attempt(attempt_id: str, user: dict = Depends(get_current_user)
 
 
 # ── Quiz-specific leaderboard ────────────────────────────────────────────────
+
 
 @router.get(
     "/quizzes/{quiz_id}/leaderboard",
@@ -340,6 +356,7 @@ async def quiz_leaderboard(quiz_id: str):
 
 
 # ── Global leaderboard ──────────────────────────────────────────────────────
+
 
 @router.get(
     "/leaderboard",

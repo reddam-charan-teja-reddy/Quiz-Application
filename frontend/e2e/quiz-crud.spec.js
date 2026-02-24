@@ -3,19 +3,11 @@
  * Covers: create quiz, edit quiz, verify on home page.
  */
 import { test, expect } from '@playwright/test';
-
-const uniqueUser = () => `quizcrud_${Date.now()}`;
+import { loginSharedUser } from './shared-user.js';
 
 test.describe('Quiz CRUD', () => {
-  let username;
-
   test.beforeEach(async ({ page }) => {
-    username = uniqueUser();
-    await page.goto('/register');
-    await page.locator('#username').fill(username);
-    await page.locator('#password').fill('testpass123');
-    await page.locator('#confirmPassword').fill('testpass123');
-    await page.getByRole('button', { name: 'Register' }).click();
+    await loginSharedUser(page);
     await expect(page).toHaveURL(/\/home/, { timeout: 10000 });
   });
 

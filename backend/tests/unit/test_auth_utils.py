@@ -1,12 +1,12 @@
 """Unit tests for authentication utilities - password hashing, JWT tokens, and get_current_user."""
 
 from datetime import timedelta
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
+from authlib.jose import jwt
 from bson import ObjectId
 from fastapi import HTTPException
-from jose import jwt
 
 from app.utils.auth import (
     hash_password,
@@ -19,12 +19,12 @@ import app.config as config
 
 
 class TestPasswordHashing:
-    """Tests for bcrypt password hashing and verification."""
+    """Tests for Argon2 password hashing and verification."""
 
-    def test_hash_returns_bcrypt_format(self):
+    def test_hash_returns_argon2_format(self):
         hashed = hash_password("mysecretpassword")
         assert hashed != "mysecretpassword"
-        assert hashed.startswith("$2b$")
+        assert hashed.startswith("$argon2id$")
 
     def test_verify_correct_password(self):
         hashed = hash_password("correctpassword")
@@ -41,7 +41,9 @@ class TestJWTTokens:
     def test_access_token_contains_subject_and_type(self):
         data = {"sub": "user123", "username": "testuser"}
         token = create_access_token(data)
-        payload = jwt.decode(token, config.settings.JWT_SECRET, algorithms=[config.settings.JWT_ALGORITHM])
+        claims = jwt.decode(token, config.settings.JWT_SECRET)
+        claims.validate()
+        payload = dict(claims)
         assert payload["sub"] == "user123"
         assert payload["username"] == "testuser"
         assert payload["type"] == "access"
@@ -50,7 +52,9 @@ class TestJWTTokens:
     def test_refresh_token_contains_subject_and_type(self):
         data = {"sub": "user123", "username": "testuser"}
         token = create_refresh_token(data)
-        payload = jwt.decode(token, config.settings.JWT_SECRET, algorithms=[config.settings.JWT_ALGORITHM])
+        claims = jwt.decode(token, config.settings.JWT_SECRET)
+        claims.validate()
+        payload = dict(claims)
         assert payload["sub"] == "user123"
         assert payload["type"] == "refresh"
         assert "exp" in payload
@@ -72,9 +76,13 @@ class TestGetCurrentUser:
     @patch("app.db.db")
     async def test_valid_token_returns_user(self, mock_db, valid_user_id):
         oid = ObjectId(valid_user_id)
-        mock_db.users.find_one = AsyncMock(return_value={
-            "_id": oid, "username": "testuser", "password_hash": "xxx",
-        })
+        mock_db.users.find_one = AsyncMock(
+            return_value={
+                "_id": oid,
+                "username": "testuser",
+                "password_hash": "xxx",
+            }
+        )
 
         token = self._make_access_token(valid_user_id)
         user = await get_current_user(token=token)

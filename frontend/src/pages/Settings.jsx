@@ -129,8 +129,9 @@ const Settings = () => {
           <h2>Profile</h2>
           <form onSubmit={handleSaveProfile} className="settings-form">
             <div className="form-group">
-              <label>Display Name</label>
+              <label htmlFor="display-name">Display Name</label>
               <input
+                id="display-name"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Your display name"
@@ -138,8 +139,9 @@ const Settings = () => {
               />
             </div>
             <div className="form-group">
-              <label>Email</label>
+              <label htmlFor="email">Email</label>
               <input
+                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -155,8 +157,9 @@ const Settings = () => {
           <h2>Change Password</h2>
           <form onSubmit={handleChangePassword} className="settings-form">
             <div className="form-group">
-              <label>Current Password</label>
+              <label htmlFor="current-password">Current Password</label>
               <input
+                id="current-password"
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
@@ -164,8 +167,9 @@ const Settings = () => {
               />
             </div>
             <div className="form-group">
-              <label>New Password</label>
+              <label htmlFor="new-password">New Password</label>
               <input
+                id="new-password"
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -174,8 +178,9 @@ const Settings = () => {
               />
             </div>
             <div className="form-group">
-              <label>Confirm New Password</label>
+              <label htmlFor="confirm-new-password">Confirm New Password</label>
               <input
+                id="confirm-new-password"
                 type="password"
                 value={confirmNewPass}
                 onChange={(e) => setConfirmNewPass(e.target.value)}
@@ -220,8 +225,9 @@ const Settings = () => {
         >
           <div className="delete-confirm-form">
             <div className="form-group">
-              <label>Password</label>
+              <label htmlFor="delete-password">Password</label>
               <input
+                id="delete-password"
                 type="password"
                 value={deletePassword}
                 onChange={(e) => setDeletePassword(e.target.value)}

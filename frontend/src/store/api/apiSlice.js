@@ -9,6 +9,7 @@ import { getAccessToken, API_URL } from '../../lib/api';
  * because they manage side-effects (tokens, cookies) that don't fit
  * the RTK Query pattern cleanly.
  */
+
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({

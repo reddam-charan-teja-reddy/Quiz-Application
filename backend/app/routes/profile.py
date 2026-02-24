@@ -26,6 +26,7 @@ router = APIRouter(prefix="/api/v1", tags=["profile"])
 
 # ── Helper: build quiz list ──────────────────────────────────────────────────
 
+
 async def _created_quizzes(user_id: str) -> list[CreatedQuizInfo]:
     cursor = db.quizzes.find(
         {"author_id": user_id, "is_deleted": {"$ne": True}},
@@ -45,6 +46,7 @@ async def _created_quizzes(user_id: str) -> list[CreatedQuizInfo]:
 
 
 # ── Helper: attempt stats ───────────────────────────────────────────────────
+
 
 async def _attempt_stats(user_id: str) -> dict:
     pipeline = [
@@ -71,6 +73,7 @@ async def _attempt_stats(user_id: str) -> dict:
 
 # ── Get own profile ─────────────────────────────────────────────────────────
 
+
 @router.get("/profile", response_model=UserProfileResponse)
 async def get_profile(user: dict = Depends(get_current_user)):
     """Return the authenticated user's profile with stats and created quizzes."""
@@ -95,6 +98,7 @@ async def get_profile(user: dict = Depends(get_current_user)):
 
 
 # ── Edit profile ────────────────────────────────────────────────────────────
+
 
 @router.put(
     "/profile",
@@ -122,6 +126,7 @@ async def edit_profile(
 
 
 # ── Delete account ──────────────────────────────────────────────────────────
+
 
 @router.delete(
     "/profile",
@@ -158,12 +163,15 @@ async def delete_account(
         )
 
     logger.info(
-        "Account deleted (soft): %s — keep_quizzes=%s", user["username"], body.keep_quizzes
+        "Account deleted (soft): %s — keep_quizzes=%s",
+        user["username"],
+        body.keep_quizzes,
     )
     return {"message": "Account deleted successfully"}
 
 
 # ── User stats dashboard ────────────────────────────────────────────────────
+
 
 @router.get("/stats", response_model=UserStatsResponse)
 async def get_stats(user: dict = Depends(get_current_user)):
@@ -209,16 +217,17 @@ async def get_stats(user: dict = Depends(get_current_user)):
     category_breakdown = []
     cat_cursor = await db.attempts.aggregate(cat_pipeline)
     async for doc in cat_cursor:
-        category_breakdown.append({
-            "category": doc["_id"],
-            "attempts": doc["attempts"],
-            "average_score": round(doc["average_score"], 1),
-        })
+        category_breakdown.append(
+            {
+                "category": doc["_id"],
+                "attempts": doc["attempts"],
+                "average_score": round(doc["average_score"], 1),
+            }
+        )
 
     # Recent attempts (last 10)
     recent_cursor = (
-        db.attempts
-        .find({"user_id": user_id, "status": "completed"})
+        db.attempts.find({"user_id": user_id, "status": "completed"})
         .sort("created_at", -1)
         .limit(10)
     )
@@ -249,7 +258,13 @@ async def get_stats(user: dict = Depends(get_current_user)):
         },
     ]
     score_distribution = []
-    bucket_labels = {0: "0-20", 21: "21-40", 41: "41-60", 61: "61-80", 81: "81-100"}
+    bucket_labels = {
+        0: "0-20",
+        21: "21-40",
+        41: "41-60",
+        61: "61-80",
+        81: "81-100",
+    }
     dist_cursor = await db.attempts.aggregate(dist_pipeline)
     async for doc in dist_cursor:
         label = bucket_labels.get(doc["_id"], str(doc["_id"]))
@@ -268,6 +283,7 @@ async def get_stats(user: dict = Depends(get_current_user)):
 
 # ── Public profile ──────────────────────────────────────────────────────────
 
+
 @router.get(
     "/user/{username}",
     response_model=PublicProfileResponse,
@@ -275,9 +291,7 @@ async def get_stats(user: dict = Depends(get_current_user)):
 )
 async def get_public_profile(username: str):
     """Return public profile for a given username."""
-    user = await db.users.find_one(
-        {"username": username, "is_deleted": {"$ne": True}}
-    )
+    user = await db.users.find_one({"username": username, "is_deleted": {"$ne": True}})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 

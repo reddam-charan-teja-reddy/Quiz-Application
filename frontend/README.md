@@ -1,16 +1,38 @@
-# React + Vite
+# Quiz App - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The frontend for the quiz app. React 19 SPA with Redux Toolkit for state management and RTK Query for API caching.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+bun install
+bun run dev     # starts on http://localhost:5173
+```
 
-## React Compiler
+Make sure the backend is running on port 8000 (or set `VITE_API_URL` in `.env`).
 
-The React Compiler is not enabled on this template. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Scripts
 
-## Expanding the ESLint configuration
+- `bun run dev` - dev server with HMR
+- `bun run build` - production build
+- `bun run lint` - ESLint (includes jsx-a11y for accessibility)
+- `bun run test` - run unit tests (Vitest)
+- `bun run test:watch` - tests in watch mode
+- `bun run test:coverage` - tests with coverage report
+- `bunx playwright test` - E2E tests (needs `bunx playwright install` first)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## How it's organized
+
+- `src/pages/` - one file per route, all lazy-loaded via `React.lazy()`. 16 pages total.
+- `src/store/` - Redux Toolkit. 5 slices (auth, quiz, attempt, history, ui) + RTK Query API with 24 endpoints.
+- `src/components/` - shared stuff like Sidebar, QuizCard, Toast, Pagination, etc.
+- `src/lib/` - fetch wrapper with token management, input sanitizer
+- `src/__tests__/` - Vitest unit/component tests
+
+## State management
+
+Server data goes through RTK Query (handles caching, refetching, cache invalidation via tags). Local UI state (sidebar open, toasts, confirm dialogs) lives in the `ui` slice. The attempt slice is persisted to localStorage so you don't lose your quiz progress on refresh.
+
+## Styling
+
+Plain CSS, one file per component/page. No CSS framework. Design tokens (colors, spacing) are in CSS custom properties.

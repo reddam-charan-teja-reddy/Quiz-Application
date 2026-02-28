@@ -2,18 +2,18 @@
 
 ## Overview
 
-The frontend is a **React 19** single-page application built with **Vite**, using **Redux Toolkit** for state management and **RTK Query** for server-state caching. All pages are code-split via `React.lazy()` for optimal loading performance.
+React 19 single-page application built with Vite. Uses Redux Toolkit for state management and RTK Query for server-state caching. All pages are code-split via `React.lazy()` for fast initial loads.
 
-## Technology Stack
+## Tech stack
 
-- **React 19.1** — UI framework
-- **React Router DOM 7.9** — Client-side routing with 16 routes
-- **Redux Toolkit 2.11** — State management (5 slices)
-- **RTK Query** — Server-state caching with 24 auto-generated endpoints
-- **redux-persist** — Persist attempt state across refreshes (localStorage)
-- **Recharts 3.7** — Charts for analytics pages
-- **Vite 7.1** — Build tool with HMR
-- **Bun** — Package manager and script runner
+- React 19.1
+- React Router DOM 7.9 - 16 routes
+- Redux Toolkit 2.11 - 5 slices for local state
+- RTK Query - handles all API calls, caching, and cache invalidation (24 endpoints)
+- redux-persist - keeps attempt state across page refreshes
+- Recharts 3.7 - charts on the stats page
+- Vite 7.1 - build tool
+- Bun - package manager
 
 ## Project Structure
 
@@ -166,15 +166,15 @@ frontend/src/
 | `/stats`                | StatsPage            | Yes       |
 | `*`                     | NotFound             | No        |
 
-## Code Splitting
+## Code splitting
 
-All 16 pages are loaded via `React.lazy()`:
+Every page is loaded lazily:
 
 ```javascript
 const Home = lazy(() => import("./pages/Home"));
 ```
 
-Vendor chunks are split in `vite.config.js`:
+Vendor chunks are split in `vite.config.js` to keep the main bundle small:
 
 | Chunk    | Contents                                     | Reason                               |
 | -------- | -------------------------------------------- | ------------------------------------ |
@@ -182,11 +182,11 @@ Vendor chunks are split in `vite.config.js`:
 | `redux`  | @reduxjs/toolkit, react-redux, redux-persist | State layer                          |
 | `charts` | recharts                                     | Only needed on stats/analytics pages |
 
-Result: Main bundle ~246 KB (down from ~742 KB before splitting).
+Main bundle ended up at ~246 KB (was ~742 KB before splitting).
 
 ## Accessibility
 
-### Implemented Features
+Accessibility considerations throughout the app:
 
 - **Skip-to-content link** — Visible on keyboard focus, jumps to `<main id="main-content">`
 - **Focus management** — `ScrollToTop` component focuses `<main>` on route changes
@@ -211,6 +211,8 @@ Enforced via `eslint-plugin-jsx-a11y`:
 
 ## Authentication Flow
 
+Login and session management:
+
 1. User logs in → `authSlice.login` thunk calls `/auth/login`
 2. Access token stored in memory (Redux), refresh token set as HTTP-only cookie
 3. Every API call includes `Authorization: Bearer <token>` via RTK Query's `prepareHeaders`
@@ -220,9 +222,9 @@ Enforced via `eslint-plugin-jsx-a11y`:
 
 ## Testing
 
-### Unit & Component Tests (Vitest)
+### Unit & component tests (Vitest)
 
-246 tests across 23 files:
+246 tests across 23 files covering sanitization utils, Redux slices, components, and pages.
 
 | Category        | Files | Tests |
 | --------------- | ----- | ----- |

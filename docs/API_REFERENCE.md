@@ -1,9 +1,10 @@
 # API Reference
 
 Base URL: `http://localhost:8000`
-All endpoints below are prefixed with `/api/v1`.
 
-Authentication: Include `Authorization: Bearer <access_token>` in request headers unless noted otherwise.
+All endpoints are prefixed with `/api/v1`. Authentication uses `Authorization: Bearer <access_token>` headers unless noted otherwise.
+
+Rate limits are specified per-endpoint where applicable.
 
 ---
 

@@ -91,7 +91,7 @@ You'll need two terminals:
 ```bash
 # Terminal 1 — Backend (runs on :8000)
 cd backend
-uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload
 
 # Terminal 2 — Frontend (runs on :5173)
 cd frontend
@@ -135,7 +135,7 @@ The backend is a **FastAPI** app. Here's where things live:
 
 **Request flow:** Incoming HTTP → FastAPI Router → Route handler → DB / Gemini → Pydantic response model → JSON
 
-**Database:** MongoDB with 3 collections (`users`, `quizzes`, `attempts`) and 12 indexes. We use `pymongo.AsyncMongoClient` — all DB calls are async.
+**Database:** MongoDB with 3 collections (`users`, `quizzes`, `attempts`) and 12 indexes. Uses `pymongo.AsyncMongoClient` — all DB calls are async.
 
 **AI generation:** Uses the `google-genai` SDK. The Gemini client lives in `gemini_client.py`, and the generation route in `routes/generate.py` calls it with native async (`client.aio.models.generate_content()`).
 

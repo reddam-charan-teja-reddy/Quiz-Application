@@ -2,19 +2,19 @@
 
 ## Overview
 
-The backend is a **FastAPI** application that provides a REST API for quiz management, user authentication, and AI-powered quiz generation. It uses **MongoDB** as the primary data store with **pymongo's AsyncMongoClient** for non-blocking I/O.
+FastAPI REST API serving quiz management, user authentication, and AI-powered quiz generation. Uses MongoDB with pymongo's AsyncMongoClient for non-blocking I/O and Pydantic for request/response validation.
 
-## Technology Stack
+## Tech stack
 
-- **FastAPI 0.117** — Async Python web framework with automatic OpenAPI docs
-- **Python 3.12** — Modern Python with type hints
-- **pymongo 4.10** — Official MongoDB async driver
-- **Pydantic 2.x** — Request/response validation
-- **pydantic-settings 2.12** — Environment-based configuration
-- **python-jose** — JWT token creation and validation
-- **passlib + bcrypt** — Password hashing
-- **slowapi** — Rate limiting middleware
-- **google-genai 1.64+** — Google Gen AI SDK (unified Gemini SDK)
+- FastAPI 0.117 — async web framework with auto-generated OpenAPI docs
+- Python 3.12
+- pymongo 4.10 — official MongoDB async driver (migrated from Motor)
+- Pydantic 2.x - request/response validation
+- pydantic-settings - reads config from `.env` files
+- authlib - JWT tokens
+- argon2-cffi - password hashing
+- slowapi - rate limiting
+- google-genai 1.64+ - Google's unified Gemini SDK
 
 ## Project Structure
 
@@ -39,8 +39,7 @@ backend/
 │   │   ├── generate.py     # AI generation (1 endpoint)
 │   │   └── history.py      # Deprecated stub
 │   └── utils/
-│       └── auth.py         # Password hashing, JWT helpers, get_current_user
-├── migrations/             # Database migration scripts
+│       └── auth.py         # Password hashing, JWT helpers,
 └── tests/
     ├── conftest.py         # Test client + fixtures
     ├── factories.py        # Test data builders
@@ -186,17 +185,14 @@ The `google-genai` SDK provides native async support via `client.aio.models.gene
 
 ## Error Handling
 
-- **Pydantic validation** — Automatic 422 responses with field-level errors
-- **HTTPException** — Used for application-level errors (400, 401, 403, 404, 409)
-- **Global handler** — Catches all unhandled exceptions, logs stacktrace, returns generic 500
-- **Rate limit handler** — slowapi's built-in 429 response
+- Pydantic handles validation automatically (422 with field-level errors)
+- `HTTPException` for application-level errors (400, 401, 403, 404, 409)
+- Global exception handler catches unhandled exceptions, logs the stack trace, returns generic 500
+- slowapi handles 429 rate limit responses
 
 ## Testing
 
-### Framework
-
-- **pytest + pytest-asyncio** — Async test support
-- **httpx** — AsyncClient for HTTP testing against the FastAPI app
+pytest + pytest-asyncio for async test support, httpx `AsyncClient` for HTTP-level testing.
 
 ### Test Structure
 
@@ -218,8 +214,4 @@ uv run pytest -v --tb=short      # Verbose with short tracebacks
 
 ## Linting
 
-Configured via `pyproject.toml` using **ruff**:
-
-- Target: Python 3.12
-- Line length: 100
-- Rules: E, W, F, I (isort), B (bugbear), UP (pyupgrade), S (security), RUF
+Ruff for everything (linting + formatting), configured in `pyproject.toml`. Python 3.12 target, 100 char line limit. Includes isort, bugbear, pyupgrade, and security rules.

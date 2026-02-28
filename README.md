@@ -1,299 +1,156 @@
-# Quiz Application
+# Quiz App
 
-A full-stack quiz application built with **React 19** + **Redux Toolkit** and **FastAPI** + **MongoDB**, featuring user authentication, quiz creation, AI-powered quiz generation, server-side scoring, leaderboards, and detailed analytics.
+A full-stack quiz application with quiz creation, AI-powered generation (Google Gemini), server-side scoring, leaderboards, and user analytics. Built with React 19 + FastAPI + MongoDB.
 
-## Features
+Currently at **v0.5.1**. The [docs/](docs/) folder covers how the project evolved from its initial version through several rounds of auditing and refactoring.
 
-### Core Features
+## What it does
 
-- **User Authentication** — JWT-based registration/login with refresh tokens (HTTP-only cookies)
-- **Quiz Taking** — Interactive quiz interface with randomized questions and timed sessions
-- **Quiz Creation** — Manual quiz creation with customizable questions, categories, difficulty levels
-- **AI Generation** — Generate quizzes using Google Gemini AI based on a topic description
-- **Server-Side Scoring** — Tamper-proof scoring with full answer detail stored per attempt
-- **Leaderboards** — Per-quiz and global leaderboards with best-attempt-per-user ranking
-- **Progress Tracking** — Track quiz attempts, scores, and performance over time
-- **User Profile** — View/edit profile, display name, email, created quizzes, analytics
-- **Quiz Management** — Duplicate, export, import, publish/draft, soft-delete quizzes
+- **Create quizzes** manually or let Gemini AI generate them from a topic
+- **Take quizzes** with a timer, randomized questions, and server-side scoring (no cheating via devtools)
+- **Leaderboards** per quiz and globally, ranked by best attempt
+- **User profiles** with stats, attempt history, and charts (recharts)
+- **Quiz management** - duplicate, export/import as JSON, publish/draft, soft-delete
+- Account system with JWT auth, refresh tokens in httpOnly cookies, password changes
 
-### User Interface
+## Tech stack
 
-- **Responsive Design** — Mobile and desktop optimized
-- **Code-Split Pages** — React.lazy + Suspense for fast initial load (~246 KB main chunk)
-- **Keyboard Accessible** — Skip-to-content, keyboard navigation for quiz answers (1-4), ARIA labels throughout
-- **Real-time Feedback** — Toast notifications, loading spinners, error boundaries
+**Frontend:** React 19, Redux Toolkit + RTK Query, React Router, Vite, plain CSS
 
-## Tech Stack
+**Backend:** FastAPI (Python 3.12), MongoDB with async pymongo, Pydantic v2
 
-| Layer              | Technology                                   |
-| ------------------ | -------------------------------------------- |
-| Frontend           | React 19.1, React Router DOM 7.9, Vite 7.1   |
-| State Management   | Redux Toolkit 2.11, RTK Query, redux-persist |
-| Charts             | Recharts 3.7                                 |
-| Backend            | FastAPI 0.117, Python 3.12, Pydantic 2.x     |
-| Database           | MongoDB (pymongo 4.10 AsyncMongoClient)      |
-| Authentication     | JWT (authlib), Argon2 (argon2-cffi)          |
-| AI                 | Google Gemini (google-genai 1.64+)           |
-| Rate Limiting      | slowapi                                      |
-| Testing (Backend)  | pytest, pytest-asyncio, httpx                |
-| Testing (Frontend) | Vitest, @testing-library/react, Playwright   |
-| Linting            | ruff (backend), ESLint + jsx-a11y (frontend) |
-| Package Manager    | uv (backend), Bun 1.3.6+ (frontend)          |
+**AI:** Google Gemini via `google-genai` SDK
 
-## Getting Started
+**Auth:** JWT access/refresh tokens, Argon2 password hashing
 
-### Prerequisites
+**Testing:** pytest + httpx (backend), Vitest + Testing Library (frontend), Playwright (E2E)
 
-- **uv** (backend dependency management) — [install](https://docs.astral.sh/uv/getting-started/installation/)
-- **Bun** 1.3.6 or later (frontend)
-- **Python** 3.12+ (backend)
-- **MongoDB** running locally or remote URI
-- **Google Gemini API key** (optional — for AI quiz generation)
+**Tooling:** uv for Python deps, Bun for JS, Ruff for linting, ESLint with jsx-a11y
 
-### Backend Setup
+## Getting started
+
+You'll need Python 3.12+, [uv](https://docs.astral.sh/uv/getting-started/installation/), [Bun](https://bun.sh/) 1.3.6+, and MongoDB running locally. A Gemini API key is optional (only needed for the AI generation feature - you can get one free at [ai.google.dev](https://ai.google.dev/)).
+
+### Backend
 
 ```bash
 cd backend
-
-# Install all dependencies (creates .venv automatically)
 uv sync --group dev
-
-# Create .env file (see Environment Variables section)
 ```
 
-Create a `.env` file in the `backend/` directory:
+Create `backend/.env`:
 
 ```env
 MONGO_URI=mongodb://localhost:27017
 DB=quiz
-JWT_SECRET=your-strong-secret-here
-GEMINI_API_KEY=your_gemini_api_key_here
+JWT_SECRET=pick-something-random-here
+GEMINI_API_KEY=           # optional, leave blank if you don't have one
 CORS_ORIGINS=["http://localhost:5173"]
 ```
 
-Start the server:
+Start it:
 
 ```bash
 uv run uvicorn app.main:app --reload
 ```
 
-The API will be available at `http://localhost:8000` with interactive docs at `/docs`.
+API runs at http://localhost:8000. Interactive docs at http://localhost:8000/docs.
 
-### Frontend Setup
+### Frontend
 
 ```bash
 cd frontend
-
-# Install dependencies
 bun install
-
-# Start development server
 bun run dev
 ```
 
-The app will be available at `http://localhost:5173`.
+Open http://localhost:5173.
 
-### Running Tests
+### Tests
 
 ```bash
-# Backend tests
+# backend
 cd backend
 uv run pytest
 
-# Frontend unit/component tests
+# frontend unit tests
 cd frontend
 bun run test
 
-# Frontend tests with coverage
-bun run test:coverage
-
-# E2E tests (Playwright starts backend + frontend automatically)
-bunx playwright install
+# E2E (playwright spins up both servers automatically)
+bunx playwright install   # first time only
 bunx playwright test
 ```
 
-Playwright uses `frontend/playwright.config.js` to start:
+Tests use separate databases (`quiz_test` / `quiz_e2e_test`) so they won't touch dev data. Safety guards prevent tests from running against non-local or non-test databases.
 
-- Backend: `uv run uvicorn app.main:app --host 127.0.0.1 --port 8000`
-- Frontend: `bun run dev`
-
-By default, E2E teardown is non-destructive and does **not** delete the shared user.
-Enable cleanup only for local/CI test runs:
-
-```bash
-E2E_DELETE_SHARED_USER=true bunx playwright test
-```
-
-### Test Database Safety
-
-Backend tests and E2E runs are destructive to their target test database (collection cleanup + DB reset in backend tests).
-Safety guards now hard-fail when:
-
-- `ENVIRONMENT` is `testing` but `MONGO_URI` is non-local (for example `mongodb+srv://...`)
-- test DB name does not look test-scoped (for example missing `test` / `e2e`)
-
-Use only local test targets:
-
-```env
-TEST_MONGO_URI=mongodb://127.0.0.1:27017
-TEST_DB=quiz_test
-E2E_MONGO_URI=mongodb://127.0.0.1:27017
-E2E_DB=quiz_e2e_test
-```
-
-### Local Validation Run (Before Push)
-
-Run this from a clean working tree before opening a PR or pushing to `main`:
-
-```bash
-# Backend validation
-cd backend
-uv run ruff check . --fix
-uv run ruff format .
-uv run pytest
-uvx pip-audit
-
-# Frontend validation
-cd ../frontend
-bun run lint
-bun run test
-bun run build
-
-# Repo-level pre-commit validation
-cd ..
-uvx pre-commit run --all-files
-```
-
-## Project Structure
+## Project structure
 
 ```
 Quiz-App/
 ├── backend/
-│   ├── pyproject.toml        # Project config, dependencies, ruff, pytest
-│   ├── uv.lock               # Locked dependency versions (managed by uv)
-│   ├── app/                   # Application source package
-│   │   ├── __init__.py
-│   │   ├── main.py            # FastAPI entry point
-│   │   ├── config.py          # pydantic-settings configuration
-│   │   ├── db.py              # MongoDB connection + index management
-│   │   ├── models.py          # All Pydantic request/response models
-│   │   ├── gemini_client.py   # Google Gemini AI client wrapper
-│   │   ├── limiter.py         # slowapi rate limiter instance
-│   │   ├── routes/
-│   │   │   ├── auth.py        # Register, login, refresh, logout, change password
-│   │   │   ├── quiz.py        # CRUD, search, duplicate, export/import, categories
-│   │   │   ├── attempts.py    # Start/finish attempts, history, leaderboards
-│   │   │   ├── profile.py     # Profile, stats, edit, delete account, public profile
-│   │   │   └── generate.py    # AI quiz generation
-│   │   └── utils/
-│   │       └── auth.py        # Password hashing, JWT creation/validation
-│   ├── migrations/            # Database migration scripts
-│   └── tests/
-│       ├── conftest.py        # Async test client + fixtures
-│       ├── factories.py       # Test data builders
-│       ├── unit/              # Model + utility tests
-│       └── integration/       # Full endpoint tests
+│   ├── app/
+│   │   ├── main.py           # FastAPI app, middleware, error handling
+│   │   ├── config.py         # Settings from .env (pydantic-settings)
+│   │   ├── db.py             # MongoDB connection + indexes
+│   │   ├── models.py         # ~45 Pydantic models for requests/responses
+│   │   ├── gemini_client.py  # Gemini AI wrapper
+│   │   └── routes/           # auth, quiz, attempts, profile, generate
+│   └── tests/                # unit + integration tests
 │
 ├── frontend/
-│   ├── index.html
-│   ├── vite.config.js         # Vite config with code-splitting
-│   ├── vitest.config.js       # Unit test configuration
-│   ├── playwright.config.js   # E2E test configuration
-│   ├── package.json
 │   └── src/
-│       ├── App.jsx            # Router + lazy-loaded routes
-│       ├── lib/
-│       │   ├── api.js         # Fetch wrapper, token management
-│       │   └── sanitize.js    # Input sanitization utilities
-│       ├── store/
-│       │   ├── index.js       # Redux store (5 slices + RTK Query + persist)
-│       │   ├── hooks.js       # Typed useAppDispatch/useAppSelector
-│       │   ├── api/
-│       │   │   └── apiSlice.js # RTK Query — 24 auto-cached endpoints
-│       │   └── slices/        # auth, quiz, attempt, history, ui
-│       ├── components/        # Shared UI: Sidebar, QuizCard, Toast, etc.
-│       ├── pages/             # 16 route pages (code-split)
-│       └── __tests__/         # Unit, store, component, page tests
+│       ├── App.jsx           # Router with lazy-loaded pages
+│       ├── store/            # Redux (5 slices + RTK Query with 24 endpoints)
+│       ├── pages/            # 16 pages, all code-split
+│       ├── components/       # Sidebar, QuizCard, Toast, Pagination, etc.
+│       └── lib/              # API wrapper, sanitization utils
 │
-├── docs/                      # Architecture docs, audits, roadmap
-└── .github/workflows/         # CI pipelines (backend, frontend, e2e)
+└── docs/                     # Architecture docs, audit reports, roadmap
 ```
 
-## API Overview
+## API
 
-All API endpoints are prefixed with `/api/v1`. Authentication uses Bearer JWT tokens.
+29 endpoints, all under `/api/v1`. Full docs in [docs/API_REFERENCE.md](docs/API_REFERENCE.md).
 
-| Method | Endpoint                   | Description                                   |
-| ------ | -------------------------- | --------------------------------------------- |
-| POST   | `/auth/register`           | Create account (rate-limited: 5/min)          |
-| POST   | `/auth/login`              | Login (rate-limited: 10/min)                  |
-| POST   | `/auth/refresh`            | Refresh access token via cookie               |
-| POST   | `/auth/logout`             | Clear refresh token cookie                    |
-| PUT    | `/auth/password`           | Change password                               |
-| GET    | `/quizzes`                 | List quizzes (search, filter, sort, paginate) |
-| GET    | `/quizzes/my`              | List user's own quizzes                       |
-| POST   | `/quizzes`                 | Create quiz                                   |
-| GET    | `/quizzes/:id`             | Get quiz detail                               |
-| PUT    | `/quizzes/:id`             | Update quiz (owner only)                      |
-| DELETE | `/quizzes/:id`             | Soft-delete quiz (owner only)                 |
-| POST   | `/quizzes/:id/duplicate`   | Duplicate quiz                                |
-| GET    | `/quizzes/:id/export`      | Export quiz as JSON                           |
-| POST   | `/quizzes/import`          | Import quiz from JSON                         |
-| GET    | `/categories`              | List categories with counts                   |
-| POST   | `/generate`                | AI quiz generation (rate-limited: 5/min)      |
-| POST   | `/attempts/start/:quizId`  | Start quiz attempt                            |
-| POST   | `/attempts/:id/finish`     | Submit answers + get score                    |
-| GET    | `/attempts`                | List user's attempt history                   |
-| GET    | `/attempts/:id`            | Get attempt detail                            |
-| DELETE | `/attempts/:id`            | Delete attempt                                |
-| GET    | `/quizzes/:id/leaderboard` | Quiz leaderboard                              |
-| GET    | `/leaderboard`             | Global leaderboard                            |
-| GET    | `/profile`                 | User profile                                  |
-| PUT    | `/profile`                 | Edit profile                                  |
-| DELETE | `/profile`                 | Delete account                                |
-| GET    | `/stats`                   | User analytics/stats                          |
-| GET    | `/user/:username`          | Public profile                                |
-| GET    | `/health`                  | Health check                                  |
+The main ones:
 
-See [docs/API_REFERENCE.md](docs/API_REFERENCE.md) for full request/response schemas.
+- `POST /auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`
+- `GET /quizzes` (search, filter, sort, paginate), `POST /quizzes`, `GET/PUT/DELETE /quizzes/:id`
+- `POST /attempts/start/:quizId`, `POST /attempts/:id/finish` (server scores it)
+- `GET /quizzes/:id/leaderboard`, `GET /leaderboard` (global)
+- `POST /generate` (AI quiz generation, rate limited)
+- `GET /profile`, `GET /stats`, `GET /user/:username`
 
-## Environment Variables
+## Environment variables
 
-### Backend (`backend/.env`)
+The backend reads from `backend/.env`. The important ones:
 
-| Variable                      | Default                       | Description                   |
-| ----------------------------- | ----------------------------- | ----------------------------- |
-| `MONGO_URI`                   | `mongodb://localhost:27017`   | MongoDB connection string     |
-| `DB`                          | `quiz`                        | Database name                 |
-| `JWT_SECRET`                  | `change-me-in-production-...` | Secret key for JWT signing    |
-| `JWT_ALGORITHM`               | `HS256`                       | JWT algorithm                 |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | `15`                          | Access token TTL              |
-| `REFRESH_TOKEN_EXPIRE_DAYS`   | `7`                           | Refresh token TTL             |
-| `GEMINI_API_KEY`              | _(empty)_                     | Google Gemini API key         |
-| `CORS_ORIGINS`                | `["http://localhost:5173"]`   | Allowed CORS origins          |
-| `MAX_REQUEST_BODY_BYTES`      | `2097152` (2 MB)              | Request body size limit       |
-| `ENVIRONMENT`                 | `development`                 | `development` or `production` |
+- `MONGO_URI` - MongoDB connection string (default: `mongodb://localhost:27017`)
+- `DB` - database name (default: `quiz`)
+- `JWT_SECRET` - **change this** from the default
+- `GEMINI_API_KEY` - for AI generation (optional)
+- `CORS_ORIGINS` - allowed origins (default: `["http://localhost:5173"]`)
 
-### Frontend (`frontend/.env`)
+For the frontend, just `VITE_API_URL=http://localhost:8000` in `frontend/.env`.
 
-| Variable       | Default                 | Description          |
-| -------------- | ----------------------- | -------------------- |
-| `VITE_API_URL` | `http://localhost:8000` | Backend API base URL |
+For tests there are separate `TEST_MONGO_URI`, `TEST_DB`, `E2E_MONGO_URI`, `E2E_DB` vars. Check [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-### Test-Only Variables (do not put in production env files)
+## Project history
 
-| Variable          | Default                     | Used by                   |
-| ----------------- | --------------------------- | ------------------------- |
-| `TEST_MONGO_URI`  | `mongodb://127.0.0.1:27017` | Backend pytest fixtures   |
-| `TEST_DB`         | `quiz_test`                 | Backend pytest fixtures   |
-| `TEST_JWT_SECRET` | `test-secret-key`           | Backend pytest fixtures   |
-| `E2E_MONGO_URI`   | `mongodb://127.0.0.1:27017` | Playwright backend server |
-| `E2E_DB`          | `quiz_e2e_test`             | Playwright backend server |
+The initial version (v0.0) had no real auth, client-side scoring, and all endpoints were POST. A full audit was done, every issue documented, and the app was rebuilt incrementally over several versions.
+
+The [docs/](docs/) folder covers the full journey:
+
+- [Audit summary](docs/06_AUDIT_SUMMARY.md) — 75+ issues found and resolved
+- [Version roadmap](docs/08_VERSION_ROADMAP.md) — each version from v0.0 to v0.5.1 and future plans
+- [System design](docs/09_SYSTEM_DESIGN.md) — production-scale architecture exploration
+- Architecture docs for the [backend](docs/BACKEND_ARCHITECTURE.md) and [frontend](docs/FRONTEND_ARCHITECTURE.md)
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, and PR guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, code style, and PR process.
 
 ## License
 
-This project is licensed under the MIT License.
+MIT

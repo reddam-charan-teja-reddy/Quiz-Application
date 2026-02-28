@@ -2,8 +2,6 @@
 
 A full-stack quiz application with quiz creation, AI-powered generation (Google Gemini), server-side scoring, leaderboards, and user analytics. Built with React 19 + FastAPI + MongoDB.
 
-Currently at **v0.5.1**. The [docs/](docs/) folder covers how the project evolved from its initial version through several rounds of auditing and refactoring.
-
 ## What it does
 
 - **Create quizzes** manually or let Gemini AI generate them from a topic
@@ -136,21 +134,10 @@ For the frontend, just `VITE_API_URL=http://localhost:8000` in `frontend/.env`.
 
 For tests there are separate `TEST_MONGO_URI`, `TEST_DB`, `E2E_MONGO_URI`, `E2E_DB` vars. Check [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-## Project history
+## DOCS
 
-The initial version (v0.0) had no real auth, client-side scoring, and all endpoints were POST. A full audit was done, every issue documented, and the app was rebuilt incrementally over several versions.
-
-The [docs/](docs/) folder covers the full journey:
-
-- [Audit summary](docs/06_AUDIT_SUMMARY.md) — 75+ issues found and resolved
-- [Version roadmap](docs/08_VERSION_ROADMAP.md) — each version from v0.0 to v0.5.1 and future plans
-- [System design](docs/09_SYSTEM_DESIGN.md) — production-scale architecture exploration
 - Architecture docs for the [backend](docs/BACKEND_ARCHITECTURE.md) and [frontend](docs/FRONTEND_ARCHITECTURE.md)
 
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, code style, and PR process.
-
-## License
-
-MIT

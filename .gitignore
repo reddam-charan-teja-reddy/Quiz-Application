@@ -59,3 +59,7 @@ playwright-report/
 09_SYSTEM_DESIGN.md
 10_MEDIA_DESIGN.md
 postman_responses.json
+
+# logs
+.logs
+*.log
